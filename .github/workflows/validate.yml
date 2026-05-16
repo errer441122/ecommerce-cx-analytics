@@ -1,0 +1,41 @@
+name: Validate CX analyst lab
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify the committed REAL dataset matches its provenance
+        run: |
+          for f in olist_reviews olist_review_comments; do
+            expected=$(grep "$f.csv:" data/REAL_DATA_PROVENANCE.md | grep -oE '[0-9a-f]{64}')
+            actual=$(sha256sum data/$f.csv | cut -d' ' -f1)
+            echo "$f expected=$expected actual=$actual"
+            test "$expected" = "$actual"
+          done
+
+      - name: Validate data
+        run: python src/validate_cx_data.py
+
+      - name: Rebuild summary and driver analysis
+        run: |
+          python src/build_cx_summary.py
+          python src/cx_driver_analysis.py
+
+      - name: Run test suite
+        run: python -m unittest discover -s tests
