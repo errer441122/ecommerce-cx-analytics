@@ -1,10 +1,13 @@
-# CX & Service Analytics Lab
+# E-commerce CX Analytics
 
-A reviewable customer-experience analytics case study on the **real**
-public *Olist Brazilian E-Commerce* dataset (Kaggle, CC BY-NC-SA 4.0). A
-hiring manager can open one repo, read a decision-style analysis, and check
-the code and tests behind every number. Positioned for **Customer
-Experience / Customer Insights / CX Analyst** internships.
+I built this case study around one practical question: what is most closely
+associated with a poor Olist customer experience, and where should a CX team
+look first?
+
+It uses the **real** public *Olist Brazilian E-Commerce* dataset (Kaggle,
+CC BY-NC-SA 4.0). The analysis, code and tests remain open for review and the
+project is positioned for **Customer Experience / Customer Insights / CX
+Analyst** internships.
 
 ## What it shows
 
