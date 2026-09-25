@@ -11,13 +11,11 @@ import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from cx_driver_analysis import load_reviews
+from cx_driver_analysis import MIN_GROUP, load_reviews
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS_DIR = ROOT / "reports"
 BRIEF_PATH = REPORTS_DIR / "customer_satisfaction_brief.md"
-
-MIN_GROUP = 400
 
 
 def build_summary(rows: list[dict[str, object]] | None = None) -> dict[str, object]:

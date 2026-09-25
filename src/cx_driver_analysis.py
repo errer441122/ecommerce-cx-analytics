@@ -261,7 +261,10 @@ def logistic_drivers(rows: list[dict[str, object]]) -> dict[str, object]:
                (r["freight_ratio"] - fr_m) / fr_s]
         row += [1.0 if r["state"] == s else 0.0 for s in top_states]
         row += [1.0 if r["category"] == c else 0.0 for c in top_cats]
-        X.append(row)
+        # Keep only the non-zero features: most columns are one-hot dummies,
+        # so each row has ~6 of 18 set and the Hessian update below touches
+        # ~36 cells instead of 324 (about 5x faster on the 95k reviews).
+        X.append([(i, v) for i, v in enumerate(row) if v])
         y.append(float(r["satisfied"]))
 
     k = len(names)
@@ -272,14 +275,15 @@ def logistic_drivers(rows: list[dict[str, object]]) -> dict[str, object]:
         H = [[0.0] * k for _ in range(k)]
         g = [0.0] * k
         for xi, yi in zip(X, y):
-            eta = sum(b * v for b, v in zip(beta, xi))
+            eta = sum(beta[a] * v for a, v in xi)
             p = 1.0 / (1.0 + math.exp(-eta)) if eta >= 0 else math.exp(eta) / (1.0 + math.exp(eta))
             w = max(p * (1 - p), 1e-6)
             resid = yi - p
-            for a in range(k):
-                g[a] += resid * xi[a]
-                for b in range(k):
-                    H[a][b] += w * xi[a] * xi[b]
+            for a, va in xi:
+                g[a] += resid * va
+                Ha = H[a]
+                for b, vb in xi:
+                    Ha[b] += w * va * vb
         for a in range(1, k):
             g[a] -= ridge * beta[a]
             H[a][a] += ridge
@@ -418,9 +422,14 @@ def write_reports(result: dict[str, object]) -> None:
                  f"{c['p_value']:.4f}{flag} | {'↑' if c['odds_ratio'] > 1 else '↓'} |")
     L.append("")
     lt = next((c for c in mv["coefficients"] if c["feature"] == "late_delivery"), None)
+    # Only call late delivery "dominant" if it really has the largest |log OR|.
+    strongest = max((c for c in mv["coefficients"] if c["feature"] != "intercept"),
+                    key=lambda c: abs(math.log(c["odds_ratio"])), default=None)
     if lt:
+        lead = ("Late delivery is the dominant driver" if strongest is lt
+                else f"Late delivery (strongest driver: `{strongest['feature']}`)")
         L.append(
-            f"Late delivery is the dominant driver: odds of a satisfied "
+            f"{lead}: odds of a satisfied "
             f"review **×{lt['odds_ratio']:.2f}** when an order arrives after "
             f"its estimate, controlling for state, category, delivery time "
             f"and freight (p = {lt['p_value']:.4f}).\n"
