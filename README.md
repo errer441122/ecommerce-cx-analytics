@@ -1,5 +1,10 @@
 # E-commerce CX Analytics
 
+> **In 30 seconds**
+> - **Finding:** late delivery is the dominant driver of a poor experience: 27% of late orders get a 4-5 star review versus 83% of on-time ones, and it cuts the odds of a satisfied review by about 80% (odds ratio 0.18) after controlling for state, category, delivery time and freight.
+> - **Method:** ~95k real Olist reviews; two-proportion z-tests with effect sizes, Wilson intervals, an NPS proxy and a multivariate logistic regression. CI re-checks them with pandas and statsmodels.
+> - **Open:** [driver analysis](reports/cx_driver_analysis.md) · [cross-check notebook](notebooks/cross_check.ipynb) · [stakeholder brief](reports/customer_satisfaction_brief.md)
+
 I built this case study around one practical question: what is most closely
 associated with a poor Olist customer experience, and where should a CX team
 look first?
