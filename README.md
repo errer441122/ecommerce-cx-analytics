@@ -82,3 +82,10 @@ attributed). No synthetic values. The only disclosed approximation is the
 NPS *band* proxy (a relabelling of the real 1-5 review score, not invented
 data). Relationships are observational, not causal; the data is Brazilian
 marketplace orders 2016-2018 and does not generalise to other businesses.
+
+## How I built this
+
+Built with AI coding assistants as a pair programmer: they drafted most of the
+code and docs. My part: choosing the business question and the data, defining
+the rules and metrics, checking results against the source data and deciding
+what to report, including what did not work.
