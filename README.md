@@ -1,94 +1,106 @@
-# E-commerce CX Analytics
+# E-commerce CX Analytics: what makes customers unhappy?
 
-> **Archived in November 2026.** An analysis exercise on a public dataset (Olist), kept for reference.
-> It is not client work. What I am working on now is on my [profile](https://github.com/errer441122).
+A practice project on a public dataset. The question is one a Customer
+Experience team asks every month: **why do some customers leave a bad review,
+and where should we act first?**
 
-> **In 30 seconds**
-> - **Finding:** late delivery is the dominant driver of a poor experience: 27% of late orders get a 4-5 star review versus 83% of on-time ones, and it cuts the odds of a satisfied review by about 80% (odds ratio 0.18) after controlling for state, category, delivery time and freight.
-> - **Method:** ~95k real Olist reviews; two-proportion z-tests with effect sizes, Wilson intervals, an NPS proxy and a multivariate logistic regression. CI re-checks them with pandas and statsmodels.
-> - **Open:** [driver analysis](reports/cx_driver_analysis.md) · [cross-check notebook](notebooks/cross_check.ipynb) · [stakeholder brief](reports/customer_satisfaction_brief.md)
+The data is about 95,000 real customer reviews from Olist, a Brazilian online
+marketplace (2016 to 2018), joined with the delivery details of each order. It
+is not client work.
 
-I built this case study around one practical question: what is most closely
-associated with a poor Olist customer experience, and where should a CX team
-look first?
+## What the data says
 
-It uses the **real** public *Olist Brazilian E-Commerce* dataset (Kaggle,
-CC BY-NC-SA 4.0). The analysis, code and tests remain open for review and the
-project is positioned for **Customer Experience / Customer Insights / CX
-Analyst** internships.
+- **79% of customers are satisfied** (4 or 5 stars out of 5).
+- **Late delivery is the main problem.** When the order arrives on time, 83% of
+  customers are satisfied. When it arrives after the promised date, only 27%
+  are. Late orders are just 6.7% of the total, but they account for 23% of all
+  unsatisfied reviews.
+- **Speed helps too.** Orders delivered within 7 days: 86% satisfied. Orders
+  that take 15 days or more: 65%.
+- **Some regions are much worse than others.** In the state of Maranhão 17% of
+  orders arrive late and satisfaction drops to 70%. Rio de Janeiro matters most
+  in volume: 12,000 reviews, 12% late, 73.5% satisfied.
+- **The worst reviews are about orders that never arrived or arrived
+  incomplete.** Comments on this topic have an average score of 1.6 out of 5.
 
-## What it shows
+Reports: [satisfaction brief](reports/customer_satisfaction_brief.md) ·
+[full analysis](reports/cx_driver_analysis.md).
 
-- **Real data, disclosed provenance.** `src/prepare_real_data.py` joins the
-  Olist reviews/orders/customers/items/products into
-  `data/olist_reviews.csv` (~95k real reviews) + `olist_review_comments.csv`
-  (Portuguese review text). Source, license, cleaning rules and SHA256 are
-  in `data/REAL_DATA_PROVENANCE.md`. CI re-verifies the checksum.
-- **Statistical driver analysis**: every categorical level (state,
-  category, delivery speed, freight level, late delivery) vs its complement
-  with a two-proportion z-test, Cohen's *h* and a 95% CI, ranked by effect,
-  with a small-n floor (`src/cx_driver_analysis.py`).
-- **Net Promoter Score** from a *disclosed* score→band proxy (5=promoter,
-  4=passive, ≤3=detractor — Olist has no 0-10 question): overall NPS with a
-  variance-based 95% CI and NPS by state.
-- **Delivery-SLA cohort**: on-time vs late delivery effect on satisfaction
-  (the real, dominant lever) with effect size and mean-score gap.
-- **Multivariate logistic regression** for P(satisfied): each driver's odds
-  ratio *controlling for the others* (state, category, delivery time,
-  freight, late delivery).
-- **Comment themes** from a disclosed Portuguese keyword lexicon over the
-  real review text.
-- A stakeholder satisfaction brief (`reports/customer_satisfaction_brief.md`).
+## The metrics I used
 
-## Recruiter 5-minute route
+| Metric | In plain words |
+| --- | --- |
+| **Satisfaction rate (CSAT)** | Share of reviews with 4 or 5 stars |
+| **Late-delivery rate** | Share of orders delivered after the date promised at checkout |
+| **Delivery time** | Days between the purchase and the delivery |
+| **Promoters and detractors** | An NPS-style score built from the stars: 5 = promoter, 4 = neutral, 3 or less = detractor. Olist has no real NPS question, so this is an approximation |
+| **Review topics** | Reviews grouped by keyword: delivery, product quality, not received, customer service |
 
-1. `reports/cx_driver_analysis.md` — NPS, driver ranking, delivery-SLA
-   cohort, multivariate model and comment themes.
-2. `reports/customer_satisfaction_brief.md` — the stakeholder summary.
-3. `data/REAL_DATA_PROVENANCE.md` — source, license (CC BY-NC-SA 4.0),
-   cleaning rules and checksums.
+Each metric is split by state and by product category, so the team can see
+where the problem is concentrated.
 
-## Run
+The full analysis also contains some more advanced statistical checks that the
+AI assistant added to confirm the numbers above. They are not the point of the
+project: the comparisons in this README are the ones I use to explain it.
 
-Olist requires a Kaggle login, so the source is not auto-downloaded:
-download `olistbr/brazilian-ecommerce` and save it as `.cache/olist.zip`
-(git-ignored), then from the repository root:
+## Real-World Business Application (Next Steps)
+
+What a CX or CRM team could do with these findings. These are recommendations:
+the dataset shows what happened, it does not prove what caused it, and nothing
+here has been tested.
+
+1. **Fix the promise before the product.** Customers are judging the delivery
+   date they were promised. In the regions with the most late orders, showing a
+   more realistic delivery date at checkout is cheaper than making the
+   logistics faster, and it attacks the same problem.
+2. **Write to the customer before they write the review.** A late order is
+   known before the customer complains. An automatic email or SMS when the
+   order passes its promised date ("we are sorry, here is the new date") costs
+   very little and reaches the customer at the moment the bad review is formed.
+3. **Ask for reviews at the right time.** Send the review request after the
+   delivery is confirmed, not a fixed number of days after the purchase.
+4. **Give "order not received" its own fast lane in customer service.** It is
+   a small group with the lowest scores, so a quick refund or reshipment there
+   protects the rating more than any other single action.
+5. **Report late-delivery rate next to satisfaction.** Looking at the two
+   numbers together, region by region, shows whether a drop in reviews
+   is a product problem or a delivery problem.
+
+## What is in here
+
+| Path | What it does |
+| --- | --- |
+| `reports/` | The satisfaction brief and the full analysis |
+| `data/` | The prepared review data and where it comes from |
+| `src/` | The Python scripts that prepare the data and build the reports |
+| `notebooks/` | A second calculation of the main numbers, to catch mistakes |
+| `tests/` | Automatic checks that run on every change |
+
+## Run it
+
+The prepared data is already in the repository, so no download is needed:
 
 ```bash
-python src/prepare_real_data.py      # joins Olist -> data/olist_reviews.csv (+ provenance)
 python src/validate_cx_data.py
 python src/build_cx_summary.py
-python src/cx_driver_analysis.py      # NPS + drivers + SLA cohort + multivariate
+python src/cx_driver_analysis.py
 python -m unittest discover -s tests
 ```
 
-Pure Python standard library — no third-party dependencies. The prepared
-CSVs are committed, so the analysis and tests run without the source.
+## Data and limits
 
-## Repository structure
+Olist Brazilian E-Commerce dataset (Kaggle, CC BY-NC-SA 4.0), used for a
+non-commercial portfolio. Source and cleaning rules are in
+[`data/REAL_DATA_PROVENANCE.md`](data/REAL_DATA_PROVENANCE.md).
 
-| Path | Purpose |
-| --- | --- |
-| `src/prepare_real_data.py` | Joins the Olist source into the committable real CSVs + provenance. |
-| `src/validate_cx_data.py` | Schema/range/consistency validation of the real extract. |
-| `src/cx_driver_analysis.py` | Driver ranking, NPS, delivery-SLA cohort, multivariate logistic, themes. |
-| `src/build_cx_summary.py` | Stakeholder KPI brief and monthly trend. |
-| `data/` | Real prepared reviews + comments + `REAL_DATA_PROVENANCE.md`. |
-| `reports/` | Driver analysis, metrics JSON and the satisfaction brief. |
-| `tests/` | Behavioral tests: methodological correctness on the real data. |
-
-## Boundary
-
-Real public e-commerce data — Olist Brazilian E-Commerce (Kaggle,
-**CC BY-NC-SA 4.0**, used non-commercially for a job-application portfolio,
-attributed). No synthetic values. The only disclosed approximation is the
-NPS *band* proxy (a relabelling of the real 1-5 review score, not invented
-data). Relationships are observational, not causal; the data is Brazilian
-marketplace orders 2016-2018 and does not generalise to other businesses.
+- This is a public dataset that many people practise on.
+- It covers one Brazilian marketplace between 2016 and 2018. The numbers do
+  not transfer to other shops.
+- Only delivered orders with a review are included.
 
 ## How I built this
 
-Built with AI coding assistants as a pair programmer: they drafted most of the
-code and docs. My part: choosing the business question and the data, defining
-the rules and metrics, checking results against the source data and deciding
-what to report, including what did not work.
+I am a Digital Marketing student, not a developer. I built this with AI coding
+assistants: they wrote most of the code. My part was choosing the business
+question and the data, deciding which metrics to compare, checking the results
+against the source data and deciding what to report.
