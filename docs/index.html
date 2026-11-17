@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>CX tools: late orders and review triage</title>
+<meta name="description" content="Find late orders before the bad review and sort negative reviews by urgency and owner, from your own exports. Runs in your browser.">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f6f4; --surface: #fbfcfb; --ink: #101614; --ink-2: #47524d; --muted: #6a7570;
+  --line: #dde3df; --rest: #d5dcd8; --accent: #0b6e4f; --on-accent: #ffffff; --tint: #e7f1ec;
+  --bad: #a3361f; --bad-tint: #fbece8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0c1210; --surface: #121a17; --ink: #edf2ef; --ink-2: #b9c4be; --muted: #8b9690;
+    --line: #25302b; --rest: #2b3833; --accent: #5fd3a4; --on-accent: #06100c; --tint: #16241e;
+    --bad: #ff9b85; --bad-tint: #2a1714;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink);
+  font: 16px/1.6 "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; }
+a { color: var(--accent); text-underline-offset: 3px; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+.top { border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+.top b { font-size: 15px; }
+.top nav { display: flex; gap: 20px; font-size: 14.5px; }
+.top nav a { color: var(--ink-2); text-decoration: none; }
+.top .src { margin-left: auto; font-size: 14.5px; }
+h1 { font-family: "Segoe UI Variable Display", "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  font-size: clamp(30px, 4vw, 44px); line-height: 1.1; letter-spacing: -0.03em; font-weight: 650; margin: 0 0 14px; max-width: 22ch; }
+.hero { padding: 56px 0 28px; }
+.lead { font-size: 18px; color: var(--ink-2); max-width: 62ch; margin: 0 0 18px; }
+.status { display: inline-flex; align-items: center; gap: 10px; font-size: 14.5px; color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.status.ok::before { background: var(--accent); }
+.status.err { color: var(--bad); }
+.status.err::before { background: var(--bad); }
+section.tool { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 28px 30px; margin: 0 0 28px; }
+section.tool h2 { font-size: 24px; letter-spacing: -0.02em; margin: 0 0 6px; }
+section.tool > p { color: var(--ink-2); margin: 0 0 20px; max-width: 72ch; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px 20px; margin-bottom: 18px; }
+label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+label small { font-weight: 400; color: var(--muted); }
+input[type=text], input[type=date], input[type=number], select { font: inherit; font-size: 15px; color: var(--ink);
+  background: var(--page); border: 1px solid var(--rest); border-radius: 8px; padding: 9px 11px; width: 100%; }
+input[type=file] { font: inherit; font-size: 14px; color: var(--ink-2); }
+input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details { margin: 0 0 18px; }
+summary { cursor: pointer; font-size: 14.5px; font-weight: 600; color: var(--accent); width: fit-content; }
+details .fields { margin-top: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+button { font: inherit; font-size: 15px; font-weight: 600; border-radius: 999px; padding: 10px 20px; cursor: pointer;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); }
+button.ghost { background: transparent; color: var(--accent); }
+button:disabled { opacity: .5; cursor: progress; }
+.result:empty { display: none; }
+.result { margin-top: 22px; }
+.msg { padding: 12px 16px; border-radius: 8px; background: var(--tint); }
+.msg.bad { background: var(--bad-tint); color: var(--bad); }
+.note { font-size: 13.5px; color: var(--muted); margin: 4px 0 14px; }
+h3 { font-size: 17px; margin: 22px 0 4px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.tile { border-top: 2px solid var(--accent); padding-top: 8px; }
+.tile b { display: block; font-size: 26px; letter-spacing: -0.02em; font-weight: 650; }
+.tile span { font-size: 13.5px; color: var(--ink-2); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0; }
+th, td { padding: 7px 10px; text-align: left; }
+td { white-space: nowrap; }
+td.wrap-cell { white-space: normal; min-width: 260px; }
+thead th { font-size: 12.5px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tbody tr + tr td { border-top: 1px solid var(--line); }
+footer { color: var(--ink-2); font-size: 14px; padding: 8px 0 48px; }
+@media (max-width: 640px) {
+  .wrap { padding: 0 16px; } .top nav { display: none; } section.tool { padding: 20px 18px; }
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+<b>CX tools</b>
+<nav aria-label="Tools"><a href="#late">Late orders</a><a href="#triage">Review triage</a></nav>
+<a class="src" href="https://github.com/errer441122/ecommerce-cx-analytics">Source on GitHub</a>
+</div></header>
+<main class="wrap">
+<div class="hero">
+<h1>Handle the late order before it becomes a bad review.</h1>
+<p class="lead">On 95,000 real reviews, 83% of on-time orders were rated 4-5 stars and only 27% of late ones. These two tools
+turn that into a daily routine on your own exports. Everything runs in this page: your files never leave your computer.</p>
+<p class="status" id="status" role="status">Loading the analysis engine (about 10 seconds the first time)</p>
+</div>
+
+<section class="tool" id="late">
+<h2>Late orders, every morning</h2>
+<p>From the export of your shipping platform or carrier: the orders past the promised date and not delivered yet, longest wait
+first, to contact before the customer complains and to keep out of promotions in Klaviyo (<code>delivery_issue=open</code>); the
+ones delivered late this week, for a follow-up; and the late rate by carrier.</p>
+<div class="fields">
+<label>Shipments CSV <input type="file" id="sh-file" accept=".csv,text/csv"></label>
+<label>As of <input type="date" id="sh-asof"></label>
+<label>Delivered late in the last <small>days</small><input type="number" id="sh-recent" value="7" min="1" max="60"></label>
+</div>
+<details>
+<summary>Your column names</summary>
+<div class="fields">
+<label>Order <input type="text" id="sh-order" value="order_id"></label>
+<label>Email <input type="text" id="sh-email" value="email"></label>
+<label>Promised date <input type="text" id="sh-promised" value="promised_date"></label>
+<label>Delivered date <small>empty while in transit</small><input type="text" id="sh-delivered" value="delivered_date"></label>
+<label>Carrier <input type="text" id="sh-carrier" value="carrier"></label>
+</div>
+</details>
+<div class="actions">
+<button id="sh-run">Find late orders</button>
+<button class="ghost" id="sh-example">Try with the example file</button>
+</div>
+<div class="result" id="sh-out" aria-live="polite"></div>
+</section>
+
+<section class="tool" id="triage">
+<h2>Negative reviews, by urgency and owner</h2>
+<p>From any reviews export with a rating and the text: reviews at or below the rating you choose, most urgent first (not
+received, then product problems, then delivery and service), each with the team it goes to, plus how often each theme comes up.
+The themes are keyword lists you can read, not a language model.</p>
+<div class="fields">
+<label>Reviews CSV <input type="file" id="rv-file" accept=".csv,text/csv"></label>
+<label>Language of the reviews <select id="rv-lang"><option value="it">Italian</option><option value="en">English</option><option value="pt">Portuguese</option></select></label>
+<label>Ratings to triage <select id="rv-max"><option value="1">1 star</option><option value="2" selected>1-2 stars</option><option value="3">1-3 stars</option></select></label>
+</div>
+<details>
+<summary>Your column names <small>(common ones are recognised)</small></summary>
+<div class="fields">
+<label>Rating <input type="text" id="rv-rating" placeholder="rating, review_score, stars"></label>
+<label>Text <input type="text" id="rv-text" placeholder="body, comment, text"></label>
+<label>Title <input type="text" id="rv-title" placeholder="title"></label>
+<label>Date <input type="text" id="rv-date" placeholder="review_date, date"></label>
+<label>Order <input type="text" id="rv-order" placeholder="order_id"></label>
+<label>Email <input type="text" id="rv-email" placeholder="email, reviewer_email"></label>
+</div>
+</details>
+<div class="actions">
+<button id="rv-run">Sort the reviews</button>
+<button class="ghost" id="rv-example">Try with example reviews (Italian)</button>
+<button class="ghost" id="rv-olist">Try with 38,813 real Olist reviews (downloads 17 MB)</button>
+</div>
+<div class="result" id="rv-out" aria-live="polite"></div>
+</section>
+</main>
+<footer><div class="wrap">
+<p>The page runs the repository's own Python code in your browser with <a href="https://pyodide.org">Pyodide</a>: the same
+functions and tests as the command line. Example files are handwritten with <code>example.com</code> addresses; the Olist
+reviews are real public data (Kaggle, CC BY-NC-SA 4.0).</p>
+</div></footer>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.28.3/full/pyodide.js" integrity="sha384-4X7gSPzQ4pHfjTE5aBEPJAQcHu55sciq+NWO3OUOZ3zHSJhn4te9CBjUyRSr+nei" crossorigin="anonymous"></script>
+<script>
+"use strict";
+const REPO = "errer441122/ecommerce-cx-analytics";
+const BASE = location.hostname.endsWith("github.io") ? `https://raw.githubusercontent.com/${REPO}/main/` : "../";
+const FILES = ["late_orders.py", "review_triage.py", "web_app.py"];
+const $ = (id) => document.getElementById(id);
+
+function setStatus(text, kind) {
+  const s = $("status");
+  s.textContent = text;
+  s.className = "status" + (kind ? " " + kind : "");
+}
+
+let enginePromise = null;
+function engine() {
+  if (!enginePromise) {
+    enginePromise = (async () => {
+      const py = await loadPyodide();
+      const dir = "/home/pyodide/app";
+      py.FS.mkdirTree(dir);
+      for (const f of FILES) {
+        const r = await fetch(BASE + "src/" + f);
+        if (!r.ok) throw new Error(`could not load ${f} (${r.status})`);
+        py.FS.writeFile(`${dir}/${f}`, await r.text());
+      }
+      py.runPython(`import sys; sys.path.insert(0, "${dir}")`);
+      setStatus("Ready. Your files stay on this computer.", "ok");
+      return py;
+    })().catch((e) => {
+      enginePromise = null;
+      setStatus("The engine did not load: " + e.message + ". Check the connection and reload.", "err");
+      throw e;
+    });
+  }
+  return enginePromise;
+}
+
+async function fileText(input) {
+  const f = input.files[0];
+  if (!f) return null;
+  const buf = await f.arrayBuffer();
+  try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); }
+  catch { return new TextDecoder("windows-1252").decode(buf); }  // older Excel exports
+}
+async function urlText(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`could not load the example (${r.status})`);
+  return r.text();
+}
+
+function el(tag, props = {}, ...children) {
+  const node = Object.assign(document.createElement(tag), props);
+  for (const c of children) node.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  return node;
+}
+function table(header, rows, limit = 25, wrapCol = -1) {
+  const body = rows.slice(0, limit).map((r) => el("tr", {}, ...r.map((c, i) => el("td", i === wrapCol ? { className: "wrap-cell" } : {}, c))));
+  const parts = [el("div", { className: "scroll" }, el("table", {},
+    el("thead", {}, el("tr", {}, ...header.map((h) => el("th", {}, h)))), el("tbody", {}, ...body)))];
+  if (rows.length > limit) parts.push(el("p", { className: "note" }, `Showing ${limit} of ${rows.length.toLocaleString("en")}. The download has them all.`));
+  return parts;
+}
+function tile(value, label) { return el("div", { className: "tile" }, el("b", {}, value), el("span", {}, label)); }
+function downloadButton(label, name, text) {
+  const b = el("button", { className: "ghost", type: "button" }, label);
+  b.addEventListener("click", () => {
+    const a = el("a", { href: URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" })), download: name });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  return b;
+}
+const pct = (x) => `${(x * 100).toFixed(1)}%`;
+
+async function run(button, out, task, render) {
+  button.disabled = true;
+  out.replaceChildren(el("p", { className: "note" }, "Working..."));
+  try {
+    const py = await engine();
+    const r = await task(py);
+    out.replaceChildren(...(r.error ? [el("p", { className: "msg bad" }, r.error)] : render(r)));
+  } catch (e) {
+    out.replaceChildren(el("p", { className: "msg bad" }, e.message || String(e)));
+  } finally {
+    button.disabled = false;
+  }
+}
+function call(py, code, files = {}, values = {}) {
+  for (const [path, text] of Object.entries(files)) py.FS.writeFile(path, text);
+  for (const [name, value] of Object.entries(values)) py.globals.set(name, value);
+  return JSON.parse(py.runPython("import web_app\n" + code));
+}
+
+function showLate(r) {
+  const parts = [el("div", { className: "tiles" },
+    tile(r.open.length.toLocaleString("en"), "late and not delivered yet"),
+    tile(r.delivered.length.toLocaleString("en"), "delivered late recently"),
+    tile(r.shipments.toLocaleString("en"), `shipments with a promised date, as of ${r.as_of}`))];
+  parts.push(el("h3", {}, "Contact first, and keep out of promotions"));
+  parts.push(...(r.open.length ? table(r.open_header, r.open) : [el("p", { className: "note" }, "No order is late and still in transit.")]));
+  parts.push(el("div", { className: "actions" }, downloadButton("Download late_open.csv", "late_open.csv", r.open_csv)));
+  parts.push(el("h3", {}, "Delivered late: follow up"));
+  parts.push(...(r.delivered.length ? table(r.delivered_header, r.delivered) : [el("p", { className: "note" }, "None in this window.")]));
+  parts.push(el("div", { className: "actions" }, downloadButton("Download late_delivered.csv", "late_delivered.csv", r.delivered_csv)));
+  parts.push(el("h3", {}, "Late rate by carrier"));
+  parts.push(...table(["carrier", "late", "delivered", "late rate", ""],
+    r.carriers.map((c) => [c.carrier, c.late, c.delivered, pct(c.late_rate), c.delivered < r.min_carrier_orders ? "few orders, not a trend" : ""])));
+  return parts;
+}
+
+function showTriage(r) {
+  const parts = [el("div", { className: "tiles" },
+    tile(r.queued.toLocaleString("en"), `reviews to handle, of ${r.reviews.toLocaleString("en")}`),
+    ...Object.entries(r.by_theme).map(([k, v]) => tile(v.toLocaleString("en"), k.replace("_", " "))))];
+  parts.push(el("h3", {}, "The queue, most urgent first"));
+  parts.push(...table(r.header, r.queue, 25, r.header.indexOf("excerpt")));
+  parts.push(el("div", { className: "actions" }, downloadButton("Download triage.csv", "triage.csv", r.triage_csv)));
+  parts.push(el("h3", {}, "Themes across all reviews"));
+  parts.push(...table(r.themes_header, r.themes));
+  parts.push(el("div", { className: "actions" }, downloadButton("Download themes.csv", "themes.csv", r.themes_csv)));
+  return parts;
+}
+
+$("sh-asof").value = new Date().toISOString().slice(0, 10);
+function lateArgs() {
+  return { as_of: $("sh-asof").value, recent: Number($("sh-recent").value) || 7, c_order: $("sh-order").value,
+           c_email: $("sh-email").value, c_promised: $("sh-promised").value, c_delivered: $("sh-delivered").value,
+           c_carrier: $("sh-carrier").value };
+}
+const LATE_CALL = 'web_app.late("/tmp/shipments.csv", as_of, recent, c_order, c_email, c_promised, c_delivered, c_carrier)';
+$("sh-run").addEventListener("click", () => run($("sh-run"), $("sh-out"), async (py) => {
+  const text = await fileText($("sh-file"));
+  if (!text) return { error: "Choose the shipments export first." };
+  return call(py, LATE_CALL, { "/tmp/shipments.csv": text }, lateArgs());
+}, showLate));
+$("sh-example").addEventListener("click", () => run($("sh-example"), $("sh-out"), async (py) => {
+  $("sh-asof").value = "2026-06-01";
+  for (const [id, v] of [["sh-order", "order_id"], ["sh-email", "email"], ["sh-promised", "promised_date"], ["sh-delivered", "delivered_date"], ["sh-carrier", "carrier"]]) $(id).value = v;
+  return call(py, LATE_CALL, { "/tmp/shipments.csv": await urlText(BASE + "data/shipments_example.csv") }, lateArgs());
+}, showLate));
+
+function reviewArgs() {
+  const columns = {};
+  for (const k of ["rating", "text", "title", "date", "order", "email"]) columns[k] = $("rv-" + k).value.trim();
+  return { lang: $("rv-lang").value, max_rating: Number($("rv-max").value), columns: JSON.stringify(columns) };
+}
+const TRIAGE_CALL = 'web_app.triage("/tmp/reviews.csv", lang, max_rating, columns)';
+$("rv-run").addEventListener("click", () => run($("rv-run"), $("rv-out"), async (py) => {
+  const text = await fileText($("rv-file"));
+  if (!text) return { error: "Choose the reviews export first." };
+  return call(py, TRIAGE_CALL, { "/tmp/reviews.csv": text }, reviewArgs());
+}, showTriage));
+$("rv-example").addEventListener("click", () => run($("rv-example"), $("rv-out"), async (py) => {
+  $("rv-lang").value = "it";
+  return call(py, TRIAGE_CALL, { "/tmp/reviews.csv": await urlText(BASE + "data/reviews_example.csv") }, reviewArgs());
+}, showTriage));
+$("rv-olist").addEventListener("click", () => run($("rv-olist"), $("rv-out"), async (py) => {
+  const [reviews, comments] = await Promise.all([urlText(BASE + "data/olist_reviews.csv"), urlText(BASE + "data/olist_review_comments.csv")]);
+  return call(py, 'web_app.olist_demo("/tmp/olist_reviews.csv", "/tmp/olist_comments.csv")',
+              { "/tmp/olist_reviews.csv": reviews, "/tmp/olist_comments.csv": comments });
+}, showTriage));
+
+engine().catch(() => {});
+</script>
+</body>
+</html>

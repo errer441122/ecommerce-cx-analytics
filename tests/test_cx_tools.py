@@ -87,7 +87,7 @@ class TestReviewTriage(unittest.TestCase):
         self.assertEqual(row["theme"], "not_received")
 
     def test_reproduces_the_published_themes_on_the_real_olist_comments(self):
-        # Same keywords as the analysis: on the 38,814 real comments the theme
+        # Same keywords as the analysis: on the 38,813 real comments the theme
         # counts and average ratings must match reports/cx_driver_metrics.json.
         score = {r["review_id"]: r["review_score"] for r in _rows(ROOT / "data" / "olist_reviews.csv")}
         with tempfile.TemporaryDirectory() as tmp:
@@ -107,6 +107,38 @@ class TestReviewTriage(unittest.TestCase):
         for t in published["comment_themes"]:
             with self.subTest(t["theme"]):
                 self.assertEqual(mine[names[t["theme"]]], (t["mentions"], t["avg_review_score"]))
+
+
+class TestBrowserPageFunctions(unittest.TestCase):
+    """What docs/index.html calls (it runs this Python in the browser)."""
+
+    def test_late_orders(self):
+        import web_app
+        out = json.loads(web_app.late(str(SHIPMENTS), "2026-06-01", 7))
+        self.assertEqual([r[1] for r in out["open"]], ["#2002", "#2003", "#2008"])
+        self.assertTrue(out["open_csv"].startswith("email,order_id,carrier,promised_date,days_late,delivery_issue"))
+
+    def test_a_carrier_file_saved_by_italian_excel(self):
+        import web_app
+        with tempfile.TemporaryDirectory() as tmp:
+            f = Path(tmp) / "spedizioni.csv"
+            f.write_text("ordine;cliente;consegna_prevista;consegnato_il\n#1;a@example.com;20/05/2026;\n",
+                         encoding="utf-8-sig")
+            out = json.loads(web_app.late(str(f), "2026-06-01", 7, "ordine", "cliente", "consegna_prevista",
+                                          "consegnato_il", "corriere"))
+        self.assertEqual(out["open"][0][:2], ["a@example.com", "#1"])
+        self.assertEqual(out["open"][0][4], 12)
+
+    def test_triage_and_a_clear_message_for_a_wrong_file(self):
+        import web_app
+        self.assertEqual(json.loads(web_app.triage(str(REVIEWS), "it", 2))["queued"], 5)
+        self.assertIn("No rating column", json.loads(web_app.triage(str(SHIPMENTS)))["error"])
+
+    def test_the_real_data_demo(self):
+        import web_app
+        out = json.loads(web_app.olist_demo(str(ROOT / "data" / "olist_reviews.csv"),
+                                            str(ROOT / "data" / "olist_review_comments.csv")))
+        self.assertEqual((out["reviews"], out["queued"], out["by_theme"]["not_received"]), (38813, 9191, 2080))
 
 
 if __name__ == "__main__":

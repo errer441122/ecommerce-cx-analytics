@@ -13,7 +13,7 @@ list the team can read and edit, and writes into --out (default cx_actions/):
                rating. The monthly voice-of-customer summary.
 
 The themes are keywords, not a language model: every match can be checked by
-reading the review, and the lists below are there to extend. On the 38,814
+reading the review, and the lists below are there to extend. On the 38,813
 real Olist comments (Portuguese) they reproduce the theme counts of
 reports/cx_driver_analysis.md exactly.
 
@@ -28,8 +28,9 @@ Pure standard library.
 from __future__ import annotations
 
 import argparse
-import csv
 from pathlib import Path
+
+from late_orders import read_csv, to_csv  # same CSV reading and writing for both tools
 
 # theme: (urgency, owner, keywords by language). Lower urgency is handled first;
 # "praise" never routes a review. Portuguese lists are the ones of the Olist
@@ -84,30 +85,29 @@ def themes_of(text: str, lang: str) -> list[str]:
 
 
 def read_reviews(path: Path, chosen: dict[str, str | None]) -> list[dict]:
-    with path.open(newline="", encoding="utf-8-sig") as fh:  # -sig: Excel adds a BOM
-        reader = csv.DictReader(fh)
-        names = set(reader.fieldnames or ())
-        col = {role: chosen.get(role) or next((c for c in COLUMNS[role] if c in names), None) for role in COLUMNS}
-        for role in ("rating", "text"):
-            if not col[role] or col[role] not in names:
-                raise SystemExit(f"No {role} column found; pass its name with --{role}.")
-        reviews = []
-        for line, r in enumerate(reader, start=2):
-            raw = (r.get(col["rating"]) or "").strip()
-            if not raw:
-                continue
-            try:
-                rating = float(raw.replace(",", "."))
-            except ValueError:
-                raise SystemExit(f"Line {line}: rating {raw!r} is not a number.") from None
-            text = " ".join(filter(None, (r.get(col["title"]) if col["title"] else "", r.get(col["text"]) or "")))
-            reviews.append({
-                "rating": rating,
-                "text": text.strip(),
-                "date": (r.get(col["date"]) or "").strip() if col["date"] else "",
-                "order_id": (r.get(col["order"]) or "").strip() if col["order"] else "",
-                "email": (r.get(col["email"]) or "").strip().lower() if col["email"] else "",
-            })
+    reader = read_csv(path)
+    names = set(reader.fieldnames or ())
+    col = {role: chosen.get(role) or next((c for c in COLUMNS[role] if c in names), None) for role in COLUMNS}
+    for role in ("rating", "text"):
+        if not col[role] or col[role] not in names:
+            raise SystemExit(f"No {role} column found; pass its name with --{role}.")
+    reviews = []
+    for line, r in enumerate(reader, start=2):
+        raw = (r.get(col["rating"]) or "").strip()
+        if not raw:
+            continue
+        try:
+            rating = float(raw.replace(",", "."))
+        except ValueError:
+            raise SystemExit(f"Line {line}: rating {raw!r} is not a number.") from None
+        text = " ".join(filter(None, (r.get(col["title"]) if col["title"] else "", r.get(col["text"]) or "")))
+        reviews.append({
+            "rating": rating,
+            "text": text.strip(),
+            "date": (r.get(col["date"]) or "").strip() if col["date"] else "",
+            "order_id": (r.get(col["order"]) or "").strip() if col["order"] else "",
+            "email": (r.get(col["email"]) or "").strip().lower() if col["email"] else "",
+        })
     return reviews
 
 
@@ -137,6 +137,23 @@ def triage(reviews: list[dict], lang: str, max_rating: float) -> list[dict]:
     return sorted(rows, key=lambda r: (r["urgency"], r["rating"]))
 
 
+TRIAGE_HEADER = ["urgency", "theme", "owner", "rating", "date", "order_id", "email", "excerpt"]
+THEMES_HEADER = ["theme", "mentions", "share_of_reviews_with_text", "avg_rating"]
+
+
+def triage_rows(queue: list[dict]) -> list[list[object]]:
+    out = []
+    for r in queue:
+        excerpt = r["text"][:160] + ("..." if len(r["text"]) > 160 else "")
+        out.append([r["urgency"], r["theme"], r["owner"], f"{r['rating']:g}", _safe(r["date"]),
+                    _safe(r["order_id"]), _safe(r["email"]), _safe(excerpt)])
+    return out
+
+
+def theme_rows(summary: list[dict]) -> list[list[object]]:
+    return [[s["theme"], s["mentions"], f"{s['share']:.4f}", f"{s['avg_rating']:.2f}"] for s in summary]
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--reviews", type=Path, required=True)
@@ -155,18 +172,8 @@ def main(argv: list[str] | None = None) -> int:
     summary = theme_summary(reviews, args.lang)
 
     args.out.mkdir(parents=True, exist_ok=True)
-    with (args.out / "triage.csv").open("w", newline="", encoding="utf-8") as fh:
-        w = csv.writer(fh, lineterminator="\n")
-        w.writerow(["urgency", "theme", "owner", "rating", "date", "order_id", "email", "excerpt"])
-        for r in queue:
-            excerpt = r["text"][:160] + ("..." if len(r["text"]) > 160 else "")
-            w.writerow([r["urgency"], r["theme"], r["owner"], f"{r['rating']:g}", _safe(r["date"]),
-                        _safe(r["order_id"]), _safe(r["email"]), _safe(excerpt)])
-    with (args.out / "themes.csv").open("w", newline="", encoding="utf-8") as fh:
-        w = csv.writer(fh, lineterminator="\n")
-        w.writerow(["theme", "mentions", "share_of_reviews_with_text", "avg_rating"])
-        for s in summary:
-            w.writerow([s["theme"], s["mentions"], f"{s['share']:.4f}", f"{s['avg_rating']:.2f}"])
+    (args.out / "triage.csv").write_text(to_csv(TRIAGE_HEADER, triage_rows(queue)), encoding="utf-8", newline="\n")
+    (args.out / "themes.csv").write_text(to_csv(THEMES_HEADER, theme_rows(summary)), encoding="utf-8", newline="\n")
 
     print(f"{len(reviews):,} reviews, {len(queue):,} at {args.max_rating:g} stars or fewer -> {args.out}/triage.csv")
     by_theme: dict[str, int] = {}

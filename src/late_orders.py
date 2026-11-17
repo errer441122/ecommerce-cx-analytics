@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import io
 from datetime import date, datetime
 from pathlib import Path
 
@@ -52,33 +53,52 @@ def parse_day(text: str | None) -> date | None:
     raise ValueError(f"date {text!r} is neither YYYY-MM-DD nor DD/MM/YYYY")
 
 
+OPEN_HEADER = ["email", "order_id", "carrier", "promised_date", "days_late", "delivery_issue"]
+DELIVERED_HEADER = ["email", "order_id", "carrier", "promised_date", "delivered_date", "days_late", "delivery_issue"]
+
+
+def read_csv(path: Path) -> csv.DictReader:
+    """Rows of a CSV as real tools save it: comma, semicolon (Italian Excel) or
+    tab as separator, with or without the byte-order mark Excel adds."""
+    text = path.read_text(encoding="utf-8-sig")
+    header = text.split("\n", 1)[0]
+    return csv.DictReader(io.StringIO(text, newline=""), delimiter=max(",;\t", key=header.count))
+
+
+def to_csv(header: list[str], rows: list[list[object]]) -> str:
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(header)
+    w.writerows(rows)
+    return buf.getvalue()
+
+
 def _safe(text: str) -> str:
     return "'" + text if text.startswith(FORMULA_START) else text
 
 
 def read_shipments(path: Path, order: str, email: str, promised: str, delivered: str,
                    carrier: str) -> list[dict]:
-    with path.open(newline="", encoding="utf-8-sig") as fh:  # -sig: Excel adds a BOM
-        reader = csv.DictReader(fh)
-        missing = [c for c in (order, promised, delivered) if c not in (reader.fieldnames or ())]
-        if missing:
-            raise SystemExit(f"Column(s) not in the file: {', '.join(missing)}. "
-                             f"Pass your column names with --order, --promised and --delivered.")
-        rows = []
-        for line, r in enumerate(reader, start=2):
-            try:
-                due, arrived = parse_day(r[promised]), parse_day(r[delivered])
-            except ValueError as e:
-                raise SystemExit(f"Line {line}: {e}") from None
-            if due is None:
-                continue  # no promise, nothing to be late against
-            rows.append({
-                "order_id": (r.get(order) or "").strip(),
-                "email": (r.get(email) or "").strip().lower(),
-                "carrier": (r.get(carrier) or "").strip() or "unknown",
-                "promised": due,
-                "delivered": arrived,
-            })
+    reader = read_csv(path)
+    missing = [c for c in (order, promised, delivered) if c not in (reader.fieldnames or ())]
+    if missing:
+        raise SystemExit(f"Column(s) not in the file: {', '.join(missing)}. "
+                         f"Pass your column names with --order, --promised and --delivered.")
+    rows = []
+    for line, r in enumerate(reader, start=2):
+        try:
+            due, arrived = parse_day(r[promised]), parse_day(r[delivered])
+        except ValueError as e:
+            raise SystemExit(f"Line {line}: {e}") from None
+        if due is None:
+            continue  # no promise, nothing to be late against
+        rows.append({
+            "order_id": (r.get(order) or "").strip(),
+            "email": (r.get(email) or "").strip().lower(),
+            "carrier": (r.get(carrier) or "").strip() or "unknown",
+            "promised": due,
+            "delivered": arrived,
+        })
     return rows
 
 
@@ -106,11 +126,16 @@ def carrier_late_rates(rows: list[dict]) -> list[dict]:
     return sorted(out, key=lambda s: (s["delivered"] < MIN_CARRIER_ORDERS, -s["late_rate"], s["carrier"]))
 
 
-def _write(path: Path, header: list[str], rows: list[list[object]]) -> None:
-    with path.open("w", newline="", encoding="utf-8") as fh:
-        w = csv.writer(fh, lineterminator="\n")
-        w.writerow(header)
-        w.writerows(rows)
+def open_rows(still_out: list[dict]) -> list[list[object]]:
+    """late_open.csv: to contact first, and to set delivery_issue=open in Klaviyo."""
+    return [[_safe(r["email"]), _safe(r["order_id"]), _safe(r["carrier"]), r["promised"].isoformat(),
+             r["days_late"], "open"] for r in still_out]
+
+
+def delivered_rows(arrived_late: list[dict]) -> list[list[object]]:
+    """late_delivered.csv: a follow-up, then delivery_issue=closed."""
+    return [[_safe(r["email"]), _safe(r["order_id"]), _safe(r["carrier"]), r["promised"].isoformat(),
+             r["delivered"].isoformat(), r["days_late"], "closed"] for r in arrived_late]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -131,14 +156,9 @@ def main(argv: list[str] | None = None) -> int:
     still_out, arrived_late = late_lists(rows, as_of, args.recent)
 
     args.out.mkdir(parents=True, exist_ok=True)
-    _write(args.out / "late_open.csv",
-           ["email", "order_id", "carrier", "promised_date", "days_late", "delivery_issue"],
-           [[_safe(r["email"]), _safe(r["order_id"]), _safe(r["carrier"]), r["promised"].isoformat(),
-             r["days_late"], "open"] for r in still_out])
-    _write(args.out / "late_delivered.csv",
-           ["email", "order_id", "carrier", "promised_date", "delivered_date", "days_late", "delivery_issue"],
-           [[_safe(r["email"]), _safe(r["order_id"]), _safe(r["carrier"]), r["promised"].isoformat(),
-             r["delivered"].isoformat(), r["days_late"], "closed"] for r in arrived_late])
+    (args.out / "late_open.csv").write_text(to_csv(OPEN_HEADER, open_rows(still_out)), encoding="utf-8", newline="\n")
+    (args.out / "late_delivered.csv").write_text(to_csv(DELIVERED_HEADER, delivered_rows(arrived_late)),
+                                                 encoding="utf-8", newline="\n")
 
     print(f"As of {as_of}: {len(still_out)} late and not delivered yet, "
           f"{len(arrived_late)} delivered late in the last {args.recent} days -> {args.out}/")

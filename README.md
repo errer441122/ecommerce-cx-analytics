@@ -11,7 +11,14 @@ is not client work.
 ## Use it on your own store
 
 The analysis below found that late delivery is the main reason for a bad
-review. Two tools turn that into a daily routine on a store's own exports:
+review. Two tools turn that into a daily routine on a store's own exports.
+
+**[Open the tools in your browser](https://errer441122.github.io/ecommerce-cx-analytics/)**:
+load your shipments or reviews export, see the result, download the lists.
+The page runs this repository's Python in the browser, so nothing leaves your
+computer and nothing needs installing. Its "try" buttons use handwritten
+example files and the 38,813 real Olist reviews, only to show what the output
+looks like. The same tools run from the command line:
 
 | Tool | Command | What you get |
 | --- | --- | --- |
@@ -20,14 +27,16 @@ review. Two tools turn that into a daily routine on a store's own exports:
 
 The shipments file comes from the shipping platform or the carrier and needs
 an order number, the promised delivery date and the delivery date (empty while
-in transit); dates can be `YYYY-MM-DD` or `DD/MM/YYYY`. The reviews file can be
+in transit); dates can be `YYYY-MM-DD` or `DD/MM/YYYY`, and files saved again
+by Excel (semicolons, byte-order mark, older Windows encoding in the browser)
+are read as they are. The reviews file can be
 any export with a rating and the text. Column names differ by platform, so
 both tools take them as flags (`--promised`, `--delivered`, `--rating`,
 `--text`, ...). The themes are a keyword list in Italian, English and
 Portuguese that the team can read and extend, not a language model: every tag
 can be checked by reading the review.
 
-**How I know it is right:** on the 38,814 real Olist comments the triage
+**How I know it is right:** on the 38,813 real Olist comments the triage
 reproduces the theme counts and average ratings of the analysis below exactly.
 On those reviews it puts 9,191 at 1-2 stars in the queue, and 2,080 of them
 say the order never arrived. The late-orders tool is tested on a handwritten
