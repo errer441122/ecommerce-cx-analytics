@@ -22,3 +22,5 @@ CV_Riccardo_Capanna_*
 Cover_Letter_*
 docs/application-specific/
 .cache/
+# late_orders.py / review_triage.py output: customer lists with emails
+cx_actions/

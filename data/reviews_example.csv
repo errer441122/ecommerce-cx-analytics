@@ -1,0 +1,9 @@
+rating,title,body,review_date,order_id,email
+1,Mai arrivato,"Ordine pagato il 20 maggio, il pacco non è arrivato e il corriere non risponde.",2026-06-01,#2002,marco@example.com
+2,Confezione rotta,"Il sacchetto è arrivato rotto, metà del caffè era sparso nella scatola.",2026-05-31,#2004,luca@example.com
+2,,"Consegna in ritardo di una settimana rispetto alla data promessa.",2026-05-29,#2005,anna@example.com
+1,Nessuna risposta,"Ho scritto due volte all'assistenza per il rimborso, nessuna risposta.",2026-05-28,#1987,franco@example.com
+3,,"Buono ma un po' caro.",2026-05-27,#1990,chiara@example.com
+5,Ottimo,"Caffè ottimo, lo consiglio. Arrivato prima del previsto.",2026-05-26,#2001,giulia@example.com
+2,Gusto deludente,"Troppo amaro per i miei gusti.",2026-05-25,#1975,sergio@example.com
+4,,"Tutto bene, spedizione veloce.",2026-05-24,#2007,elena@example.com

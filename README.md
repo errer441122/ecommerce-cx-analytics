@@ -8,6 +8,35 @@ The data is about 95,000 real customer reviews from Olist, a Brazilian online
 marketplace (2016 to 2018), joined with the delivery details of each order. It
 is not client work.
 
+## Use it on your own store
+
+The analysis below found that late delivery is the main reason for a bad
+review. Two tools turn that into a daily routine on a store's own exports:
+
+| Tool | Command | What you get |
+| --- | --- | --- |
+| Late orders | `python src/late_orders.py --shipments shipments.csv` | `late_open.csv`: orders past the promised date and not delivered yet, longest wait first, to contact before the customer complains and to import into Klaviyo (`delivery_issue=open`) so promotions skip them. `late_delivered.csv`: orders that arrived late this week, for a follow-up. The late rate by carrier, to spot the one that is failing |
+| Review triage | `python src/review_triage.py --reviews reviews.csv --lang it` | `triage.csv`: 1-2 star reviews, most urgent first (not received, then product problems, then delivery and service), each with the team it goes to. `themes.csv`: how often each theme comes up and its average rating |
+
+The shipments file comes from the shipping platform or the carrier and needs
+an order number, the promised delivery date and the delivery date (empty while
+in transit); dates can be `YYYY-MM-DD` or `DD/MM/YYYY`. The reviews file can be
+any export with a rating and the text. Column names differ by platform, so
+both tools take them as flags (`--promised`, `--delivered`, `--rating`,
+`--text`, ...). The themes are a keyword list in Italian, English and
+Portuguese that the team can read and extend, not a language model: every tag
+can be checked by reading the review.
+
+**How I know it is right:** on the 38,814 real Olist comments the triage
+reproduces the theme counts and average ratings of the analysis below exactly.
+On those reviews it puts 9,191 at 1-2 stars in the queue, and 2,080 of them
+say the order never arrived. The late-orders tool is tested on a handwritten
+file ([`data/shipments_example.csv`](data/shipments_example.csv)), because the
+public dataset does not include orders still in transit.
+
+Nothing leaves the machine. The output folder `cx_actions/` is gitignored
+because the lists hold customer emails.
+
 ## What the data says
 
 - **79% of customers are satisfied** (4 or 5 stars out of 5).
@@ -72,7 +101,7 @@ here has been tested.
 | --- | --- |
 | `reports/` | The satisfaction brief and the full analysis |
 | `data/` | The prepared review data and where it comes from |
-| `src/` | The Python scripts that prepare the data and build the reports |
+| `src/` | The Python scripts that prepare the data, build the reports and run the two tools |
 | `notebooks/` | A second calculation of the main numbers, to catch mistakes |
 | `tests/` | Automatic checks that run on every change |
 
