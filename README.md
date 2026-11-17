@@ -18,7 +18,18 @@ load your shipments or reviews export, see the result, download the lists.
 The page runs this repository's Python in the browser, so nothing leaves your
 computer and nothing needs installing. Its "try" buttons use handwritten
 example files and the 38,813 real Olist reviews, only to show what the output
-looks like. The same tools run from the command line:
+looks like.
+
+[![The tools page: the finding on the real Olist reviews, and the late-orders tool on the example file](assets/tools_page.png)](https://errer441122.github.io/ecommerce-cx-analytics/)
+
+The page opens on the finding of the analysis below: 82.7% of the orders
+delivered on time got 4 or 5 stars, against 26.7% of the late ones. Under it,
+the two tools: in the picture, the late-orders tool on the example file, with
+the orders to contact first, the late deliveries to follow up and the late
+rate by carrier. The review triage shows its queue as tickets, most urgent
+first, each with the team it goes to.
+
+The same tools run from the command line:
 
 | Tool | Command | What you get |
 | --- | --- | --- |
