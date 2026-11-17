@@ -6,137 +6,244 @@
 <meta name="color-scheme" content="light dark">
 <title>CX tools: late orders and review triage</title>
 <meta name="description" content="Find late orders before the bad review and sort negative reviews by urgency and owner, from your own exports. Runs in your browser.">
+<link rel="preload" href="fonts/outfit-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/outfit-600.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* Outfit, SIL Open Font License (fonts/OFL-outfit.txt) */
+@font-face { font-family: "Outfit"; src: url("fonts/outfit-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Outfit"; src: url("fonts/outfit-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Outfit"; src: url("fonts/outfit-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+/* Terracotta on slate. One radius, 6px (4px for what sits inside the segmented control and badges). */
 :root {
   color-scheme: light;
-  --page: #f4f6f4; --surface: #fbfcfb; --ink: #101614; --ink-2: #47524d; --muted: #6a7570;
-  --line: #dde3df; --rest: #d5dcd8; --accent: #0b6e4f; --on-accent: #ffffff; --tint: #e7f1ec;
-  --bad: #a3361f; --bad-tint: #fbece8;
+  --page: #eef1f5; --surface: #f9fafb; --sunk: #e4e8ee;
+  --ink: #121820; --ink-2: #444f5e; --muted: #586474;
+  --line: #d7dde6; --rest: #b6bfcc;
+  --accent: #b4441b; --accent-2: #973812; --on-accent: #fff8f4; --tint: #f7e6dd;
+  --quiet: #7f8a9b;
+  --r: 6px;
+  --sans: "Outfit", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --page: #0c1210; --surface: #121a17; --ink: #edf2ef; --ink-2: #b9c4be; --muted: #8b9690;
-    --line: #25302b; --rest: #2b3833; --accent: #5fd3a4; --on-accent: #06100c; --tint: #16241e;
-    --bad: #ff9b85; --bad-tint: #2a1714;
+    --page: #0e1217; --surface: #151a21; --sunk: #1b2129;
+    --ink: #e6eaef; --ink-2: #aab3bf; --muted: #8a95a3;
+    --line: #262d37; --rest: #3a4452;
+    --accent: #f0875a; --accent-2: #f5a27c; --on-accent: #1a0e08; --tint: #2c1a12;
+    --quiet: #5d6877;
   }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--page); color: var(--ink);
-  font: 16px/1.6 "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 400 16px/1.6 var(--sans); }
 a { color: var(--accent); text-underline-offset: 3px; }
-.wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
-.top { border-bottom: 1px solid var(--line); }
-.top .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
-.top b { font-size: 15px; }
-.top nav { display: flex; gap: 20px; font-size: 14.5px; }
-.top nav a { color: var(--ink-2); text-decoration: none; }
-.top .src { margin-left: auto; font-size: 14.5px; }
-h1 { font-family: "Segoe UI Variable Display", "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-  font-size: clamp(30px, 4vw, 44px); line-height: 1.1; letter-spacing: -0.03em; font-weight: 650; margin: 0 0 14px; max-width: 22ch; }
-.hero { padding: 56px 0 28px; }
-.lead { font-size: 18px; color: var(--ink-2); max-width: 62ch; margin: 0 0 18px; }
-.status { display: inline-flex; align-items: center; gap: 10px; font-size: 14.5px; color: var(--ink-2);
-  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
-.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-.status.ok::before { background: var(--accent); }
-.status.err { color: var(--bad); }
-.status.err::before { background: var(--bad); }
-section.tool { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 28px 30px; margin: 0 0 28px; }
-section.tool h2 { font-size: 24px; letter-spacing: -0.02em; margin: 0 0 6px; }
-section.tool > p { color: var(--ink-2); margin: 0 0 20px; max-width: 72ch; }
-.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px 20px; margin-bottom: 18px; }
-label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+code { font-family: var(--mono); font-size: .88em; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { width: min(1200px, 100% - 48px); margin-inline: auto; }
+
+.nav { height: 60px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.nav .wrap { height: 100%; display: flex; align-items: center; gap: 34px; }
+.brand { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); text-decoration: none; }
+.nav nav { display: flex; gap: 26px; font-size: 15px; }
+.nav nav a { color: var(--ink-2); text-decoration: none; }
+.nav nav a:hover { color: var(--ink); }
+.nav .src { margin-left: auto; font-size: 15px; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 64px; align-items: center; padding: 76px 0 92px; }
+h1 { font-size: clamp(2.2rem, 1rem + 2.5vw, 2.9rem); line-height: 1.05; letter-spacing: -0.03em; font-weight: 600; margin: 0 0 22px; text-wrap: balance; }
+.lead { font-size: 1.2rem; color: var(--ink-2); max-width: 40ch; margin: 0 0 34px; }
+.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 22px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; font: 600 15.5px/1 var(--sans); padding: 13px 20px;
+  border-radius: var(--r); border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent);
+  text-decoration: none; cursor: pointer; white-space: nowrap; }
+.btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
+.btn.ghost { background: transparent; color: var(--accent); border-color: var(--rest); }
+.btn.ghost:hover { background: var(--tint); border-color: var(--accent); }
+.btn:disabled { opacity: .55; cursor: progress; }
+.status { margin: 0; display: inline-flex; align-items: center; gap: 10px; font-size: 14.5px; color: var(--ink-2); }
+.status::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--quiet); }
+.status.ok::before { background: var(--ink-2); }
+.status.err { color: var(--accent); }
+.status.err::before { background: var(--accent); }
+
+.finding { margin: 0; padding: 28px 32px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.finding figcaption { font-weight: 600; }
+.f-row { padding: 18px 0 20px; }
+.f-row + .f-row { border-top: 1px solid var(--line); }
+.f-head { display: flex; justify-content: space-between; gap: 12px; margin: 0; font-size: 14.5px; color: var(--ink-2); }
+.f-val { margin: 4px 0 12px; font-size: clamp(2.5rem, 1.6rem + 2vw, 3.3rem); line-height: 1; letter-spacing: -0.03em; font-weight: 600; }
+.f-bar { display: block; height: 20px; }
+.f-bar i { display: block; height: 100%; width: calc(var(--v) * 100%); border-radius: 0 4px 4px 0; background: var(--quiet); }
+.f-row.late .f-bar i { background: var(--accent); }
+.f-src { margin: 6px 0 0; font-size: 13.5px; color: var(--muted); }
+
+.console { border-top: 1px solid var(--line); padding: 72px 0 84px; }
+.console-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px 32px; margin: 0 0 22px; }
+h2 { font-size: clamp(1.7rem, 1.2rem + 1.4vw, 2.3rem); line-height: 1.12; letter-spacing: -0.025em; font-weight: 600; margin: 0; }
+.seg { display: inline-flex; gap: 4px; padding: 4px; background: var(--sunk); border: 1px solid var(--line); border-radius: var(--r); }
+.seg [role=tab] { font: 600 15.5px/1 var(--sans); padding: 11px 20px; border: 0; border-radius: 4px; background: transparent; color: var(--ink-2); cursor: pointer; }
+.seg [role=tab]:hover { color: var(--ink); }
+.seg [role=tab][aria-selected=true] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line), 0 1px 3px rgb(18 24 32 / .14); }
+
+.desk { display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 540px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.desk[hidden] { display: none; }
+.controls { display: grid; gap: 18px; align-content: start; padding: 28px; border-right: 1px solid var(--line); }
+.controls > p { margin: 0; font-size: 15px; color: var(--ink-2); }
+.output { min-width: 0; padding: 28px 32px; }
+.output[aria-busy=true] { opacity: .55; }
+.empty { min-height: 100%; display: grid; place-content: center; text-align: center; max-width: 46ch; margin: 0 auto; padding: 32px 0; color: var(--muted); }
+.empty b { display: block; margin-bottom: 4px; font-weight: 600; color: var(--ink); }
+
+label { display: grid; gap: 7px; font-size: 14.5px; font-weight: 600; }
 label small { font-weight: 400; color: var(--muted); }
-input[type=text], input[type=date], input[type=number], select { font: inherit; font-size: 15px; color: var(--ink);
-  background: var(--page); border: 1px solid var(--rest); border-radius: 8px; padding: 9px 11px; width: 100%; }
-input[type=file] { font: inherit; font-size: 14px; color: var(--ink-2); }
-input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-details { margin: 0 0 18px; }
-summary { cursor: pointer; font-size: 14.5px; font-weight: 600; color: var(--accent); width: fit-content; }
-details .fields { margin-top: 12px; }
-.actions { display: flex; flex-wrap: wrap; gap: 10px; }
-button { font: inherit; font-size: 15px; font-weight: 600; border-radius: 999px; padding: 10px 20px; cursor: pointer;
-  border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); }
-button.ghost { background: transparent; color: var(--accent); }
-button:disabled { opacity: .5; cursor: progress; }
-.result:empty { display: none; }
-.result { margin-top: 22px; }
-.msg { padding: 12px 16px; border-radius: 8px; background: var(--tint); }
-.msg.bad { background: var(--bad-tint); color: var(--bad); }
-.note { font-size: 13.5px; color: var(--muted); margin: 4px 0 14px; }
-h3 { font-size: 17px; margin: 22px 0 4px; }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
-.tile { border-top: 2px solid var(--accent); padding-top: 8px; }
-.tile b { display: block; font-size: 26px; letter-spacing: -0.02em; font-weight: 650; }
-.tile span { font-size: 13.5px; color: var(--ink-2); }
-.scroll { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0; }
-th, td { padding: 7px 10px; text-align: left; }
-td { white-space: nowrap; }
-td.wrap-cell { white-space: normal; min-width: 260px; }
-thead th { font-size: 12.5px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); white-space: nowrap; }
+input[type=text], input[type=date], input[type=number], select { width: 100%; font: 400 15px/1.4 var(--sans); color: var(--ink);
+  background: var(--page); border: 1px solid var(--rest); border-radius: var(--r); padding: 9px 11px; }
+input[type=file] { width: 100%; font: 400 14px var(--sans); color: var(--ink-2); }
+input[type=file]::file-selector-button { font: 600 14px var(--sans); margin-right: 12px; padding: 8px 14px; border-radius: var(--r);
+  border: 1px solid var(--rest); background: var(--surface); color: var(--ink); cursor: pointer; }
+details { border-top: 1px solid var(--line); padding-top: 14px; }
+summary { width: fit-content; cursor: pointer; font-size: 14.5px; font-weight: 600; color: var(--accent); }
+.column-names { display: grid; gap: 12px; margin-top: 14px; }
+.stack { display: grid; gap: 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+
+.msg { margin: 0 0 12px; padding: 12px 16px; border-radius: var(--r); background: var(--sunk); }
+.msg.bad { background: var(--tint); color: var(--accent); }
+.note { font-size: 13.5px; color: var(--muted); margin: 6px 0 12px; }
+.controls .note { margin: 0; }
+h4 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; }
+.stats { display: flex; flex-wrap: wrap; gap: 12px 44px; }
+.stat b { display: block; font-size: 2rem; line-height: 1.1; letter-spacing: -0.02em; font-weight: 600; }
+.stat span { font-size: 14px; color: var(--ink-2); }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); margin: 6px 0 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 9px 12px; text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
+thead th { font-size: 12.5px; font-weight: 600; color: var(--muted); background: var(--sunk); }
 tbody tr + tr td { border-top: 1px solid var(--line); }
-footer { color: var(--ink-2); font-size: 14px; padding: 8px 0 48px; }
+.late-by { display: inline-block; padding: 2px 8px; border-radius: 4px; background: var(--tint); color: var(--accent); font-weight: 600; font-size: 13px; }
+.bars { display: grid; gap: 10px; max-width: 600px; margin: 8px 0 6px; }
+.bar-row { display: grid; grid-template-columns: 8rem minmax(0, 1fr) 8.5rem; align-items: center; gap: 14px; font-size: 14px; color: var(--ink-2); }
+.bar-row i { display: block; height: 14px; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--accent); }
+.bar-row.faint i { background: var(--quiet); }
+.bar-row b { font-weight: 600; color: var(--ink); }
+.bar-row small { font-size: 13px; font-weight: 400; color: var(--muted); }
+.tickets { display: grid; gap: 10px; margin: 8px 0 12px; }
+.ticket { padding: 12px 16px 13px; background: var(--page); border: 1px solid var(--line); border-left: 3px solid var(--quiet); border-radius: var(--r); }
+.ticket.u1 { border-left-color: var(--accent); }
+.ticket.u2 { border-left-color: color-mix(in srgb, var(--accent) 50%, var(--quiet)); }
+.ticket header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; font-size: 13.5px; color: var(--ink-2); }
+.ticket header b { font-size: 15.5px; font-weight: 600; color: var(--ink); }
+.ticket p { margin: 4px 0 0; }
+.ticket footer { display: flex; flex-wrap: wrap; gap: 2px 16px; margin-top: 6px; font: 12.5px var(--mono); color: var(--muted); }
+
+.foot { border-top: 1px solid var(--line); padding: 30px 0 56px; font-size: 14px; color: var(--ink-2); }
+.foot p { margin: 0; max-width: 84ch; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .seg [role=tab] { transition: background-color .15s, border-color .15s, color .15s, transform .15s; }
+  .btn:active { transform: translateY(1px); }
+  .status:not(.ok):not(.err)::before { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+}
+@media (max-width: 920px) {
+  .hero { grid-template-columns: 1fr; gap: 40px; padding: 44px 0 60px; }
+  .desk { grid-template-columns: 1fr; }
+  .controls { border-right: 0; border-bottom: 1px solid var(--line); }
+}
 @media (max-width: 640px) {
-  .wrap { padding: 0 16px; } .top nav { display: none; } section.tool { padding: 20px 18px; }
+  .wrap { width: calc(100% - 32px); }
+  .nav nav { display: none; }
+  .console { padding: 56px 0; }
+  .seg { width: 100%; }
+  .seg [role=tab] { flex: 1; padding-inline: 10px; }
+  .controls, .output { padding: 22px 18px; }
+  .bar-row { grid-template-columns: 5.5rem minmax(0, 1fr) 6.5rem; gap: 10px; }
 }
 </style>
 </head>
 <body>
-<header class="top"><div class="wrap">
-<b>CX tools</b>
+<header class="nav"><div class="wrap">
+<a class="brand" href="#top">CX tools</a>
 <nav aria-label="Tools"><a href="#late">Late orders</a><a href="#triage">Review triage</a></nav>
 <a class="src" href="https://github.com/errer441122/ecommerce-cx-analytics">Source on GitHub</a>
 </div></header>
-<main class="wrap">
-<div class="hero">
+
+<main id="top">
+<section class="hero wrap">
+<div>
 <h1>Handle the late order before it becomes a bad review.</h1>
-<p class="lead">On 95,000 real reviews, 83% of on-time orders were rated 4-5 stars and only 27% of late ones. These two tools
-turn that into a daily routine on your own exports. Everything runs in this page: your files never leave your computer.</p>
+<p class="lead">Two tools for customer service: late shipments to contact first, and negative reviews sorted by urgency and owner.</p>
+<div class="hero-actions">
+<a class="btn" href="#tools">Open the tools</a>
 <p class="status" id="status" role="status">Loading the analysis engine (about 10 seconds the first time)</p>
 </div>
+</div>
+<figure class="finding">
+<figcaption>Reviews with 4 or 5 stars</figcaption>
+<div class="f-row">
+<p class="f-head"><span>Delivered on time</span><span>89,277 orders</span></p>
+<p class="f-val">82.7%</p>
+<span class="f-bar" aria-hidden="true"><i style="--v:.827"></i></span>
+</div>
+<div class="f-row late">
+<p class="f-head"><span>Delivered late</span><span>6,362 orders</span></p>
+<p class="f-val">26.7%</p>
+<span class="f-bar" aria-hidden="true"><i style="--v:.267"></i></span>
+</div>
+<p class="f-src">95,639 real orders with a review (Olist, Brazil, 2016-2018). The full analysis is in the repository.</p>
+</figure>
+</section>
 
-<section class="tool" id="late">
-<h2>Late orders, every morning</h2>
-<p>From the export of your shipping platform or carrier: the orders past the promised date and not delivered yet, longest wait
-first, to contact before the customer complains and to keep out of promotions in Klaviyo (<code>delivery_issue=open</code>); the
-ones delivered late this week, for a follow-up; and the late rate by carrier.</p>
-<div class="fields">
+<section class="console" id="tools" aria-labelledby="tools-title"><div class="wrap">
+<div class="console-head">
+<h2 id="tools-title">Work through today's lists</h2>
+<div class="seg" id="seg" role="tablist" aria-label="Tools">
+<button type="button" role="tab" id="tab-late" aria-controls="late" aria-selected="true">Late orders</button>
+<button type="button" role="tab" id="tab-triage" aria-controls="triage" aria-selected="false" tabindex="-1">Review triage</button>
+</div>
+</div>
+
+<div class="desk" role="tabpanel" id="late" aria-labelledby="tab-late">
+<div class="controls">
+<p>From the export of your shipping platform or carrier: orders past the promised date and still in transit, to contact before the
+customer complains and to keep out of promotions in Klaviyo (<code>delivery_issue=open</code>).</p>
 <label>Shipments CSV <input type="file" id="sh-file" accept=".csv,text/csv"></label>
 <label>As of <input type="date" id="sh-asof"></label>
-<label>Delivered late in the last <small>days</small><input type="number" id="sh-recent" value="7" min="1" max="60"></label>
-</div>
+<label><span>Delivered late in the last <small>days</small></span><input type="number" id="sh-recent" value="7" min="1" max="60"></label>
 <details>
 <summary>Your column names</summary>
-<div class="fields">
+<div class="column-names">
 <label>Order <input type="text" id="sh-order" value="order_id"></label>
 <label>Email <input type="text" id="sh-email" value="email"></label>
 <label>Promised date <input type="text" id="sh-promised" value="promised_date"></label>
-<label>Delivered date <small>empty while in transit</small><input type="text" id="sh-delivered" value="delivered_date"></label>
+<label><span>Delivered date <small>empty while in transit</small></span><input type="text" id="sh-delivered" value="delivered_date"></label>
 <label>Carrier <input type="text" id="sh-carrier" value="carrier"></label>
 </div>
 </details>
-<div class="actions">
-<button id="sh-run">Find late orders</button>
-<button class="ghost" id="sh-example">Try with the example file</button>
+<div class="stack">
+<button class="btn" id="sh-run">Find late orders</button>
+<button class="btn ghost" id="sh-example">Try the example file</button>
 </div>
-<div class="result" id="sh-out" aria-live="polite"></div>
-</section>
+</div>
+<div class="output" id="sh-out" aria-live="polite">
+<p class="empty"><b>No shipments loaded yet</b>The late orders appear here, longest wait first, with the late rate by carrier and the files for Klaviyo and customer service.</p>
+</div>
+</div>
 
-<section class="tool" id="triage">
-<h2>Negative reviews, by urgency and owner</h2>
-<p>From any reviews export with a rating and the text: reviews at or below the rating you choose, most urgent first (not
-received, then product problems, then delivery and service), each with the team it goes to, plus how often each theme comes up.
-The themes are keyword lists you can read, not a language model.</p>
-<div class="fields">
+<div class="desk" role="tabpanel" id="triage" aria-labelledby="tab-triage" hidden>
+<div class="controls">
+<p>From any reviews export with a rating and the text: the reviews at or below the rating you choose, most urgent first, each with the
+team it goes to. The themes are keyword lists you can read, not a language model.</p>
 <label>Reviews CSV <input type="file" id="rv-file" accept=".csv,text/csv"></label>
 <label>Language of the reviews <select id="rv-lang"><option value="it">Italian</option><option value="en">English</option><option value="pt">Portuguese</option></select></label>
 <label>Ratings to triage <select id="rv-max"><option value="1">1 star</option><option value="2" selected>1-2 stars</option><option value="3">1-3 stars</option></select></label>
-</div>
 <details>
-<summary>Your column names <small>(common ones are recognised)</small></summary>
-<div class="fields">
+<summary>Your column names</summary>
+<div class="column-names">
+<p class="note">Common names are recognised. Fill these only if yours are different.</p>
 <label>Rating <input type="text" id="rv-rating" placeholder="rating, review_score, stars"></label>
 <label>Text <input type="text" id="rv-text" placeholder="body, comment, text"></label>
 <label>Title <input type="text" id="rv-title" placeholder="title"></label>
@@ -145,18 +252,24 @@ The themes are keyword lists you can read, not a language model.</p>
 <label>Email <input type="text" id="rv-email" placeholder="email, reviewer_email"></label>
 </div>
 </details>
-<div class="actions">
-<button id="rv-run">Sort the reviews</button>
-<button class="ghost" id="rv-example">Try with example reviews (Italian)</button>
-<button class="ghost" id="rv-olist">Try with 38,813 real Olist reviews (downloads 17 MB)</button>
+<div class="stack">
+<button class="btn" id="rv-run">Sort the reviews</button>
+<button class="btn ghost" id="rv-example">Try Italian examples</button>
+<button class="btn ghost" id="rv-olist">Try 38,813 Olist reviews</button>
 </div>
-<div class="result" id="rv-out" aria-live="polite"></div>
-</section>
+<p class="note">The Olist reviews are real public data; the example downloads 17 MB.</p>
+</div>
+<div class="output" id="rv-out" aria-live="polite">
+<p class="empty"><b>No reviews loaded yet</b>The queue appears here as tickets, most urgent first: not received, then product problems, then delivery and service.</p>
+</div>
+</div>
+</div></section>
 </main>
-<footer><div class="wrap">
-<p>The page runs the repository's own Python code in your browser with <a href="https://pyodide.org">Pyodide</a>: the same
-functions and tests as the command line. Example files are handwritten with <code>example.com</code> addresses; the Olist
-reviews are real public data (Kaggle, CC BY-NC-SA 4.0).</p>
+
+<footer class="foot"><div class="wrap">
+<p>This page runs the repository's own Python in your browser with <a href="https://pyodide.org">Pyodide</a>: the same functions and
+tests as the command line. Example files are handwritten with <code>example.com</code> addresses; the Olist reviews are real public
+data (Kaggle, CC BY-NC-SA 4.0).</p>
 </div></footer>
 
 <script src="https://cdn.jsdelivr.net/pyodide/v0.28.3/full/pyodide.js" integrity="sha384-4X7gSPzQ4pHfjTE5aBEPJAQcHu55sciq+NWO3OUOZ3zHSJhn4te9CBjUyRSr+nei" crossorigin="anonymous"></script>
@@ -166,6 +279,36 @@ const REPO = "errer441122/ecommerce-cx-analytics";
 const BASE = location.hostname.endsWith("github.io") ? `https://raw.githubusercontent.com/${REPO}/main/` : "../";
 const FILES = ["late_orders.py", "review_triage.py", "web_app.py"];
 const $ = (id) => document.getElementById(id);
+
+// Segmented control (ARIA tabs). Links to #late and #triage open the right tool.
+const tabList = [...$("seg").querySelectorAll("[role=tab]")];
+function showTool(id, focus = false) {
+  const tab = tabList.find((t) => t.getAttribute("aria-controls") === id);
+  if (!tab) return false;
+  for (const t of tabList) {
+    const on = t === tab;
+    t.setAttribute("aria-selected", String(on));
+    t.tabIndex = on ? 0 : -1;
+    $(t.getAttribute("aria-controls")).hidden = !on;
+  }
+  if (focus) tab.focus();
+  return true;
+}
+$("seg").addEventListener("click", (e) => { const t = e.target.closest("[role=tab]"); if (t) showTool(t.getAttribute("aria-controls")); });
+$("seg").addEventListener("keydown", (e) => {
+  const i = tabList.indexOf(document.activeElement);
+  const next = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: tabList.length - 1 }[e.key];
+  if (i < 0 || next === undefined) return;
+  e.preventDefault();
+  showTool(tabList[(next + tabList.length) % tabList.length].getAttribute("aria-controls"), true);
+});
+for (const a of document.querySelectorAll('a[href^="#"]')) a.addEventListener("click", (e) => {
+  if (!showTool(a.hash.slice(1))) return;
+  e.preventDefault();
+  history.replaceState(null, "", a.hash);
+  $("tools").scrollIntoView();
+});
+if (showTool(location.hash.slice(1))) $("tools").scrollIntoView();
 
 function setStatus(text, kind) {
   const s = $("status");
@@ -210,21 +353,28 @@ async function urlText(url) {
   return r.text();
 }
 
+// DOM helpers: user data only ever goes through textContent.
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
   for (const c of children) node.append(c instanceof Node ? c : document.createTextNode(String(c)));
   return node;
 }
-function table(header, rows, limit = 25, wrapCol = -1) {
-  const body = rows.slice(0, limit).map((r) => el("tr", {}, ...r.map((c, i) => el("td", i === wrapCol ? { className: "wrap-cell" } : {}, c))));
+function table(header, rows, cell = (h, v) => v, limit = 25) {
+  const body = rows.slice(0, limit).map((r) => el("tr", {}, ...r.map((c, i) => el("td", {}, cell(header[i], c)))));
   const parts = [el("div", { className: "scroll" }, el("table", {},
     el("thead", {}, el("tr", {}, ...header.map((h) => el("th", {}, h)))), el("tbody", {}, ...body)))];
   if (rows.length > limit) parts.push(el("p", { className: "note" }, `Showing ${limit} of ${rows.length.toLocaleString("en")}. The download has them all.`));
   return parts;
 }
-function tile(value, label) { return el("div", { className: "tile" }, el("b", {}, value), el("span", {}, label)); }
+const lateCell = (h, v) => h === "days_late" ? el("span", { className: "late-by" }, `${v} day${v === 1 ? "" : "s"} late`) : v;
+function stat(value, label) { return el("div", { className: "stat" }, el("b", {}, value), el("span", {}, label)); }
+// One series, one hue; grey marks a row with too few orders to read as a trend.
+function bars(rows) {
+  return el("div", { className: "bars" }, ...rows.map(([name, share, value, faint]) => el("div", { className: "bar-row" + (faint ? " faint" : "") },
+    el("span", {}, name), el("span", {}, el("i", { style: `width:${share * 100}%` })), el("b", {}, ...value))));
+}
 function downloadButton(label, name, text) {
-  const b = el("button", { className: "ghost", type: "button" }, label);
+  const b = el("button", { className: "btn ghost", type: "button" }, label);
   b.addEventListener("click", () => {
     const a = el("a", { href: URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" })), download: name });
     document.body.append(a); a.click(); a.remove();
@@ -233,10 +383,13 @@ function downloadButton(label, name, text) {
   return b;
 }
 const pct = (x) => `${(x * 100).toFixed(1)}%`;
+const nice = (k) => k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, " ");
 
+// While a tool runs, the previous result stays on screen, dimmed.
 async function run(button, out, task, render) {
   button.disabled = true;
-  out.replaceChildren(el("p", { className: "note" }, "Working..."));
+  out.setAttribute("aria-busy", "true");
+  if (!out.dataset.used) out.replaceChildren(el("p", { className: "empty" }, "Working..."));
   try {
     const py = await engine();
     const r = await task(py);
@@ -245,6 +398,8 @@ async function run(button, out, task, render) {
     out.replaceChildren(el("p", { className: "msg bad" }, e.message || String(e)));
   } finally {
     button.disabled = false;
+    out.removeAttribute("aria-busy");
+    out.dataset.used = "1";
   }
 }
 function call(py, code, files = {}, values = {}) {
@@ -254,33 +409,48 @@ function call(py, code, files = {}, values = {}) {
 }
 
 function showLate(r) {
-  const parts = [el("div", { className: "tiles" },
-    tile(r.open.length.toLocaleString("en"), "late and not delivered yet"),
-    tile(r.delivered.length.toLocaleString("en"), "delivered late recently"),
-    tile(r.shipments.toLocaleString("en"), `shipments with a promised date, as of ${r.as_of}`))];
-  parts.push(el("h3", {}, "Contact first, and keep out of promotions"));
-  parts.push(...(r.open.length ? table(r.open_header, r.open) : [el("p", { className: "note" }, "No order is late and still in transit.")]));
-  parts.push(el("div", { className: "actions" }, downloadButton("Download late_open.csv", "late_open.csv", r.open_csv)));
-  parts.push(el("h3", {}, "Delivered late: follow up"));
-  parts.push(...(r.delivered.length ? table(r.delivered_header, r.delivered) : [el("p", { className: "note" }, "None in this window.")]));
-  parts.push(el("div", { className: "actions" }, downloadButton("Download late_delivered.csv", "late_delivered.csv", r.delivered_csv)));
-  parts.push(el("h3", {}, "Late rate by carrier"));
-  parts.push(...table(["carrier", "late", "delivered", "late rate", ""],
-    r.carriers.map((c) => [c.carrier, c.late, c.delivered, pct(c.late_rate), c.delivered < r.min_carrier_orders ? "few orders, not a trend" : ""])));
-  return parts;
+  const few = r.carriers.some((c) => c.delivered < r.min_carrier_orders);
+  return [
+    el("div", { className: "stats" },
+      stat(r.open.length.toLocaleString("en"), "late, not delivered yet"),
+      stat(r.delivered.length.toLocaleString("en"), "delivered late recently"),
+      stat(r.shipments.toLocaleString("en"), `shipments with a promised date, as of ${r.as_of}`)),
+    el("h4", {}, "Contact first, and keep out of promotions"),
+    ...(r.open.length ? table(r.open_header, r.open, lateCell) : [el("p", { className: "note" }, "No order is late and still in transit.")]),
+    el("div", { className: "actions" }, downloadButton("Download late_open.csv", "late_open.csv", r.open_csv)),
+    el("h4", {}, "Delivered late: follow up"),
+    ...(r.delivered.length ? table(r.delivered_header, r.delivered, lateCell) : [el("p", { className: "note" }, "None in this window.")]),
+    el("div", { className: "actions" }, downloadButton("Download late_delivered.csv", "late_delivered.csv", r.delivered_csv)),
+    el("h4", {}, "Late rate by carrier"),
+    ...(r.carriers.length
+      ? [bars(r.carriers.map((c) => [c.carrier, c.late_rate, [pct(c.late_rate), el("small", {}, ` ${c.late} of ${c.delivered}`)], c.delivered < r.min_carrier_orders]))]
+      : [el("p", { className: "note" }, "No delivered orders yet.")]),
+    ...(few ? [el("p", { className: "note" }, `Grey: fewer than ${r.min_carrier_orders} delivered orders, too few to call a trend.`)] : []),
+  ];
 }
 
 function showTriage(r) {
-  const parts = [el("div", { className: "tiles" },
-    tile(r.queued.toLocaleString("en"), `reviews to handle, of ${r.reviews.toLocaleString("en")}`),
-    ...Object.entries(r.by_theme).map(([k, v]) => tile(v.toLocaleString("en"), k.replace("_", " "))))];
-  parts.push(el("h3", {}, "The queue, most urgent first"));
-  parts.push(...table(r.header, r.queue, 25, r.header.indexOf("excerpt")));
-  parts.push(el("div", { className: "actions" }, downloadButton("Download triage.csv", "triage.csv", r.triage_csv)));
-  parts.push(el("h3", {}, "Themes across all reviews"));
-  parts.push(...table(r.themes_header, r.themes));
-  parts.push(el("div", { className: "actions" }, downloadButton("Download themes.csv", "themes.csv", r.themes_csv)));
-  return parts;
+  const [U, T, O, R, D, ORD, E, X] = ["urgency", "theme", "owner", "rating", "date", "order_id", "email", "excerpt"].map((h) => r.header.indexOf(h));
+  const tickets = r.queue.slice(0, 25).map((q) => {
+    const meta = [q[ORD], q[D], q[E]].filter(Boolean);
+    return el("article", { className: `ticket u${q[U]}` },
+      el("header", {}, el("b", {}, nice(q[T])), el("span", {}, `to ${q[O]}`), el("span", {}, `${q[R]} star${q[R] === "1" ? "" : "s"}`)),
+      el("p", {}, q[X]),
+      ...(meta.length ? [el("footer", {}, ...meta.map((v) => el("span", {}, v)))] : []));
+  });
+  const themes = Object.entries(r.by_theme);
+  const max = Math.max(1, ...themes.map(([, v]) => v));
+  return [
+    el("div", { className: "stats" }, stat(r.queued.toLocaleString("en"), `reviews to handle, of ${r.reviews.toLocaleString("en")}`)),
+    ...(themes.length ? [el("h4", {}, "What the queue is about"), bars(themes.map(([k, v]) => [nice(k), v / max, [v.toLocaleString("en")]]))] : []),
+    el("h4", {}, "The queue, most urgent first"),
+    ...(r.queue.length ? [el("div", { className: "tickets" }, ...tickets)] : [el("p", { className: "note" }, "No review at or below this rating.")]),
+    ...(r.queue.length > 25 ? [el("p", { className: "note" }, `Showing 25 of ${r.queue.length.toLocaleString("en")}. The download has them all.`)] : []),
+    el("div", { className: "actions" }, downloadButton("Download triage.csv", "triage.csv", r.triage_csv)),
+    el("h4", {}, "Themes across all reviews"),
+    ...table(r.themes_header, r.themes),
+    el("div", { className: "actions" }, downloadButton("Download themes.csv", "themes.csv", r.themes_csv)),
+  ];
 }
 
 $("sh-asof").value = new Date().toISOString().slice(0, 10);
