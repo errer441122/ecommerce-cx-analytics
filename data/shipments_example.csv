@@ -1,9 +1,0 @@
-order_id,email,carrier,promised_date,delivered_date
-#2001,giulia@example.com,BRT,2026-05-20,2026-05-19 16:40:00 +0200
-#2002,marco@example.com,BRT,2026-05-22,
-#2003,sara@example.com,GLS,25/05/2026,
-#2004,luca@example.com,GLS,2026-05-28,2026-05-30 11:05:00 +0200
-#2005,anna@example.com,Poste,2026-05-15,2026-05-21 09:30:00 +0200
-#2006,paolo@example.com,Poste,2026-06-03,
-#2007,elena@example.com,BRT,2026-05-27,27/05/2026
-#2008,davide@example.com,GLS,2026-05-30,

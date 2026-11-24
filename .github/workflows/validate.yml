@@ -1,4 +1,4 @@
-name: Validate CX analyst lab
+name: Validate
 
 on:
   push:
@@ -22,9 +22,9 @@ jobs:
 
       - name: Verify the committed REAL dataset matches its provenance
         run: |
-          for f in olist_reviews olist_review_comments; do
-            expected=$(grep "$f.csv:" data/REAL_DATA_PROVENANCE.md | grep -oE '[0-9a-f]{64}')
-            actual=$(sha256sum data/$f.csv | cut -d' ' -f1)
+          for f in olist_reviews.csv olist_review_comments.csv wholesale_lines.csv.gz wholesale_demo.csv.gz; do
+            expected=$(grep -F "$f:" data/REAL_DATA_PROVENANCE.md | grep -oE '[0-9a-f]{64}')
+            actual=$(sha256sum "data/$f" | cut -d' ' -f1)
             echo "$f expected=$expected actual=$actual"
             test "$expected" = "$actual"
           done
@@ -32,21 +32,17 @@ jobs:
       - name: Validate data
         run: python src/validate_cx_data.py
 
-      - name: Rebuild summary and driver analysis
+      - name: Rebuild the review analysis and the credit-note checks
         run: |
           python src/build_cx_summary.py
           python src/cx_driver_analysis.py
+          python src/backtest.py
 
       - name: Committed reports must match the code that generates them
-        run: git diff --exit-code -- reports
+        run: git diff --exit-code -- reports docs/credit_notes.json
 
       - name: Run test suite
         run: python -m unittest discover -s tests
-
-      - name: Run the two tools on the example files
-        run: |
-          python src/late_orders.py --shipments data/shipments_example.csv --as-of 2026-06-01 --out build/cx_actions
-          python src/review_triage.py --reviews data/reviews_example.csv --out build/cx_actions
 
       - name: Cross-check notebook (pandas, statsmodels)
         run: |

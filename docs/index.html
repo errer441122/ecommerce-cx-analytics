@@ -4,8 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>CX tools: late orders and review triage</title>
-<meta name="description" content="Find late orders before the bad review and sort negative reviews by urgency and owner, from your own exports. Runs in your browser.">
+<title>CX Analytics: what B2B customers say by sending goods back</title>
+<meta name="description" content="Reads credit notes as the reviews B2B customers never write: the items to keep out of the next campaign and the customers to ask.">
+<meta property="og:title" content="B2B customers don't write reviews. They send goods back.">
+<meta property="og:description" content="Credit notes read as customer feedback, checked on two years of a real wholesaler.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://errer441122.github.io/ecommerce-cx-analytics/">
 <link rel="preload" href="fonts/outfit-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/outfit-600.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -13,486 +17,495 @@
 @font-face { font-family: "Outfit"; src: url("fonts/outfit-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Outfit"; src: url("fonts/outfit-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
 @font-face { font-family: "Outfit"; src: url("fonts/outfit-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-
-/* Terracotta on slate. One radius, 6px (4px for what sits inside the segmented control and badges). */
+/* Slate with one terracotta accent. Square corners, 2px, everywhere. */
 :root {
   color-scheme: light;
-  --page: #eef1f5; --surface: #f9fafb; --sunk: #e4e8ee;
-  --ink: #121820; --ink-2: #444f5e; --muted: #586474;
-  --line: #d7dde6; --rest: #b6bfcc;
-  --accent: #b4441b; --accent-2: #973812; --on-accent: #fff8f4; --tint: #f7e6dd;
-  --quiet: #7f8a9b;
-  --r: 6px;
+  --page: #ffffff; --band: #f0f3f7; --surface: #ffffff; --head: #18212c; --on-head: #f3f6f9; --head-2: #b7c1cd;
+  --ink: #131a22; --ink-2: #424d5a; --muted: #5d6977; --line: #d8dee6; --rest: #a9b4c1;
+  --accent: #b4441b; --accent-2: #933611; --on-accent: #fff8f4; --tint: #f9ebe3; --quiet: #7d8a99; --ok: #2f6b4f; --ok-tint: #e7f2ec; --r: 2px;
   --sans: "Outfit", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --page: #0e1217; --surface: #151a21; --sunk: #1b2129;
-    --ink: #e6eaef; --ink-2: #aab3bf; --muted: #8a95a3;
-    --line: #262d37; --rest: #3a4452;
-    --accent: #f0875a; --accent-2: #f5a27c; --on-accent: #1a0e08; --tint: #2c1a12;
-    --quiet: #5d6877;
+    --page: #0f141a; --band: #141b23; --surface: #18202a; --head: #0a0e13; --on-head: #eef2f6; --head-2: #9ba7b5;
+    --ink: #e8edf2; --ink-2: #b5bfcb; --muted: #929eac; --line: #28323e; --rest: #465260;
+    --accent: #f0875a; --accent-2: #f5a27c; --on-accent: #1a0e08; --tint: #2d1c13; --quiet: #6f7c8b; --ok: #7fd0a6; --ok-tint: #14261e;
   }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--page); color: var(--ink); font: 400 16px/1.6 var(--sans); }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--page); color: var(--ink); font: 400 16.5px/1.6 var(--sans); }
 a { color: var(--accent); text-underline-offset: 3px; }
-code { font-family: var(--mono); font-size: .88em; }
+code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .86em; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.wrap { width: min(1200px, 100% - 48px); margin-inline: auto; }
+.wrap { width: min(1180px, 100% - 48px); margin-inline: auto; }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-.nav { height: 60px; background: var(--surface); border-bottom: 1px solid var(--line); }
-.nav .wrap { height: 100%; display: flex; align-items: center; gap: 34px; }
-.brand { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); text-decoration: none; }
-.nav nav { display: flex; gap: 26px; font-size: 15px; }
-.nav nav a { color: var(--ink-2); text-decoration: none; }
-.nav nav a:hover { color: var(--ink); }
-.nav .src { margin-left: auto; font-size: 15px; }
+.top { position: sticky; top: 0; z-index: 5; background: var(--head); color: var(--on-head); }
+.top .wrap { display: flex; align-items: center; gap: 28px; height: 62px; }
+.brand { font-weight: 600; font-size: 18px; color: var(--on-head); text-decoration: none; white-space: nowrap; }
+.top nav { display: flex; gap: 26px; font-size: 15.5px; margin-left: auto; white-space: nowrap; }
+.top nav a { color: var(--head-2); text-decoration: none; }
+.top nav a:hover { color: var(--on-head); text-decoration: underline; }
+.lang { display: inline-flex; gap: 2px; }
+.lang button { font: 600 13.5px/1 var(--sans); padding: 8px 10px; border: 0; border-radius: var(--r); background: transparent; color: var(--head-2); cursor: pointer; }
+.lang button[aria-pressed=true] { background: var(--on-head); color: var(--head); }
 
-.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 64px; align-items: center; padding: 76px 0 92px; }
-h1 { font-size: clamp(2.2rem, 1rem + 2.5vw, 2.9rem); line-height: 1.05; letter-spacing: -0.03em; font-weight: 600; margin: 0 0 22px; text-wrap: balance; }
-.lead { font-size: 1.2rem; color: var(--ink-2); max-width: 40ch; margin: 0 0 34px; }
-.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 22px; }
-
-.btn { display: inline-flex; align-items: center; justify-content: center; font: 600 15.5px/1 var(--sans); padding: 13px 20px;
-  border-radius: var(--r); border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent);
-  text-decoration: none; cursor: pointer; white-space: nowrap; }
+h1, h2, h3 { text-wrap: balance; font-weight: 600; letter-spacing: -0.02em; }
+h1 { font-size: clamp(2.2rem, 1.2rem + 3.2vw, 3.6rem); line-height: 1.08; margin: 0 0 18px; max-width: 21ch; }
+h2 { font-size: clamp(1.7rem, 1.2rem + 1.4vw, 2.3rem); line-height: 1.15; margin: 0 0 12px; }
+h3 { font-size: 1.15rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+.lead { font-size: 1.22rem; color: var(--ink-2); max-width: 58ch; margin: 0 0 28px; }
+.sub { font-size: 1.08rem; color: var(--ink-2); max-width: 68ch; margin: 0 0 34px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; font: 600 16px/1 var(--sans); padding: 14px 22px; border-radius: var(--r);
+  border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); text-decoration: none; cursor: pointer; white-space: nowrap; }
 .btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
+.btn:active { transform: translateY(1px); }
 .btn.ghost { background: transparent; color: var(--accent); border-color: var(--rest); }
 .btn.ghost:hover { background: var(--tint); border-color: var(--accent); }
+.btn.small { padding: 10px 14px; font-size: 14.5px; }
 .btn:disabled { opacity: .55; cursor: progress; }
-.status { margin: 0; display: inline-flex; align-items: center; gap: 10px; font-size: 14.5px; color: var(--ink-2); }
-.status::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--quiet); }
-.status.ok::before { background: var(--ink-2); }
-.status.err { color: var(--accent); }
-.status.err::before { background: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
 
-.finding { margin: 0; padding: 28px 32px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
-.finding figcaption { font-weight: 600; }
-.f-row { padding: 18px 0 20px; }
-.f-row + .f-row { border-top: 1px solid var(--line); }
-.f-head { display: flex; justify-content: space-between; gap: 12px; margin: 0; font-size: 14.5px; color: var(--ink-2); }
-.f-val { margin: 4px 0 12px; font-size: clamp(2.5rem, 1.6rem + 2vw, 3.3rem); line-height: 1; letter-spacing: -0.03em; font-weight: 600; }
-.f-bar { display: block; height: 20px; }
-.f-bar i { display: block; height: 100%; width: calc(var(--v) * 100%); border-radius: 0 4px 4px 0; background: var(--quiet); }
-.f-row.late .f-bar i { background: var(--accent); }
-.f-src { margin: 6px 0 0; font-size: 13.5px; color: var(--muted); }
+.hero { padding: 72px 0 0; }
+.two { display: grid; grid-template-columns: 1fr 1fr; margin-top: 52px; border: 1px solid var(--line); border-bottom: 0; background: var(--surface); }
+.two > div { padding: 28px 32px 34px; }
+.two > div + div { border-left: 1px solid var(--line); border-top: 4px solid var(--accent); padding-top: 24px; }
+.two h3 { font-size: 15.5px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin: 0 0 18px; }
+.two .what { font: 600 clamp(1.25rem, 1rem + .9vw, 1.6rem)/1.2 var(--sans); letter-spacing: -0.01em; margin: 0; }
+.two .how { font: 600 clamp(2rem, 1.4rem + 1.8vw, 2.9rem)/1.1 var(--sans); letter-spacing: -0.03em; margin: 8px 0 10px; }
+.two > div + div .how { color: var(--accent); }
+.two p.note { margin: 0; color: var(--ink-2); max-width: 46ch; }
 
-.console { border-top: 1px solid var(--line); padding: 72px 0 84px; }
-.console-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px 32px; margin: 0 0 22px; }
-h2 { font-size: clamp(1.7rem, 1.2rem + 1.4vw, 2.3rem); line-height: 1.12; letter-spacing: -0.025em; font-weight: 600; margin: 0; }
-.seg { display: inline-flex; gap: 4px; padding: 4px; background: var(--sunk); border: 1px solid var(--line); border-radius: var(--r); }
-.seg [role=tab] { font: 600 15.5px/1 var(--sans); padding: 11px 20px; border: 0; border-radius: 4px; background: transparent; color: var(--ink-2); cursor: pointer; }
-.seg [role=tab]:hover { color: var(--ink); }
-.seg [role=tab][aria-selected=true] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line), 0 1px 3px rgb(18 24 32 / .14); }
+section { padding: 84px 0; }
+section.alt { background: var(--band); border-block: 1px solid var(--line); }
+#check { border-top: 1px solid var(--line); background: var(--band); border-bottom: 1px solid var(--line); }
 
-.desk { display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 540px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
-.desk[hidden] { display: none; }
+.desk { display: grid; grid-template-columns: 360px minmax(0, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-height: 520px; }
 .controls { display: grid; gap: 18px; align-content: start; padding: 28px; border-right: 1px solid var(--line); }
-.controls > p { margin: 0; font-size: 15px; color: var(--ink-2); }
+.controls > p { margin: 0; font-size: 15.5px; color: var(--ink-2); }
 .output { min-width: 0; padding: 28px 32px; }
-.output[aria-busy=true] { opacity: .55; }
-.empty { min-height: 100%; display: grid; place-content: center; text-align: center; max-width: 46ch; margin: 0 auto; padding: 32px 0; color: var(--muted); }
-.empty b { display: block; margin-bottom: 4px; font-weight: 600; color: var(--ink); }
-
-label { display: grid; gap: 7px; font-size: 14.5px; font-weight: 600; }
+.output[aria-busy=true] { opacity: .5; }
+.empty { min-height: 100%; display: grid; place-content: center; text-align: center; max-width: 46ch; margin: 0 auto; color: var(--muted); }
+.empty b { display: block; color: var(--ink); margin-bottom: 4px; font-weight: 600; }
+label { display: grid; gap: 6px; font-size: 15px; font-weight: 600; }
 label small { font-weight: 400; color: var(--muted); }
-input[type=text], input[type=date], input[type=number], select { width: 100%; font: 400 15px/1.4 var(--sans); color: var(--ink);
-  background: var(--page); border: 1px solid var(--rest); border-radius: var(--r); padding: 9px 11px; }
-input[type=file] { width: 100%; font: 400 14px var(--sans); color: var(--ink-2); }
-input[type=file]::file-selector-button { font: 600 14px var(--sans); margin-right: 12px; padding: 8px 14px; border-radius: var(--r);
-  border: 1px solid var(--rest); background: var(--surface); color: var(--ink); cursor: pointer; }
+input[type=number], input[type=date], textarea { width: 100%; font: 400 15.5px/1.45 var(--sans); color: var(--ink); background: var(--page); border: 1px solid var(--rest); border-radius: var(--r); padding: 9px 11px; }
+textarea { min-height: 92px; resize: vertical; }
+input[type=file] { width: 100%; font: 400 14.5px var(--sans); color: var(--ink-2); }
+input[type=file]::file-selector-button { font: 600 14.5px var(--sans); margin-right: 12px; padding: 8px 13px; border-radius: var(--r); border: 1px solid var(--rest); background: var(--band); color: var(--ink); cursor: pointer; }
 details { border-top: 1px solid var(--line); padding-top: 14px; }
-summary { width: fit-content; cursor: pointer; font-size: 14.5px; font-weight: 600; color: var(--accent); }
-.column-names { display: grid; gap: 12px; margin-top: 14px; }
-.stack { display: grid; gap: 8px; }
-.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+summary { width: fit-content; cursor: pointer; font-size: 15px; font-weight: 600; color: var(--accent); }
+.more { display: grid; gap: 14px; margin-top: 14px; }
+.status { margin: 12px 0 0; font-size: 14.5px; color: var(--muted); min-height: 1.6em; }
+.status.err { color: var(--accent); }
+.msg { margin: 0 0 14px; padding: 12px 16px; background: var(--band); border-left: 3px solid var(--quiet); }
+.msg.err { background: var(--tint); border-left-color: var(--accent); }
+.stats { display: flex; flex-wrap: wrap; gap: 14px 46px; margin: 0 0 22px; }
+.stats b { display: block; font: 600 2rem/1.15 var(--sans); letter-spacing: -0.02em; }
+.stats span { font-size: 14.5px; color: var(--ink-2); }
+.output h3 { margin: 28px 0 8px; }
+.output h3:first-child { margin-top: 0; }
+.output p { max-width: 68ch; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); margin: 8px 0 14px; max-height: 480px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { padding: 9px 12px; text-align: left; }
+thead th { font-size: 13.5px; font-weight: 600; color: var(--muted); background: var(--band); white-space: nowrap; position: sticky; top: 0; }
+tbody tr + tr > * { border-top: 1px solid var(--line); }
+.output td { white-space: nowrap; }
+.tag { display: inline-block; font-weight: 600; font-size: 13.5px; padding: 2px 9px; border-radius: var(--r); background: var(--band); color: var(--ink-2); }
+.tag.hold { background: var(--tint); color: var(--accent-2); }
+.tag.ok { background: var(--ok-tint); color: var(--ok); }
+.foot-note { font-size: 14px; color: var(--muted); }
 
-.msg { margin: 0 0 12px; padding: 12px 16px; border-radius: var(--r); background: var(--sunk); }
-.msg.bad { background: var(--tint); color: var(--accent); }
-.note { font-size: 13.5px; color: var(--muted); margin: 6px 0 12px; }
-.controls .note { margin: 0; }
-h4 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; }
-.stats { display: flex; flex-wrap: wrap; gap: 12px 44px; }
-.stat b { display: block; font-size: 2rem; line-height: 1.1; letter-spacing: -0.02em; font-weight: 600; }
-.stat span { font-size: 14px; color: var(--ink-2); }
-.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); margin: 6px 0 10px; }
-table { border-collapse: collapse; width: 100%; font-size: 14px; }
-th, td { padding: 9px 12px; text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
-thead th { font-size: 12.5px; font-weight: 600; color: var(--muted); background: var(--sunk); }
-tbody tr + tr td { border-top: 1px solid var(--line); }
-.late-by { display: inline-block; padding: 2px 8px; border-radius: 4px; background: var(--tint); color: var(--accent); font-weight: 600; font-size: 13px; }
-.bars { display: grid; gap: 10px; max-width: 600px; margin: 8px 0 6px; }
-.bar-row { display: grid; grid-template-columns: 8rem minmax(0, 1fr) 8.5rem; align-items: center; gap: 14px; font-size: 14px; color: var(--ink-2); }
-.bar-row i { display: block; height: 14px; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--accent); }
-.bar-row.faint i { background: var(--quiet); }
-.bar-row b { font-weight: 600; color: var(--ink); }
-.bar-row small { font-size: 13px; font-weight: 400; color: var(--muted); }
-.tickets { display: grid; gap: 10px; margin: 8px 0 12px; }
-.ticket { padding: 12px 16px 13px; background: var(--page); border: 1px solid var(--line); border-left: 3px solid var(--quiet); border-radius: var(--r); }
-.ticket.u1 { border-left-color: var(--accent); }
-.ticket.u2 { border-left-color: color-mix(in srgb, var(--accent) 50%, var(--quiet)); }
-.ticket header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; font-size: 13.5px; color: var(--ink-2); }
-.ticket header b { font-size: 15.5px; font-weight: 600; color: var(--ink); }
-.ticket p { margin: 4px 0 0; }
-.ticket footer { display: flex; flex-wrap: wrap; gap: 2px 16px; margin-top: 6px; font: 12.5px var(--mono); color: var(--muted); }
+.proof { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 60px; align-items: start; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14.5px; color: var(--ink-2); margin: 0 0 18px; }
+.legend i { display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -1px; background: var(--accent); }
+.legend .o i { background: var(--quiet); }
+.runs { display: grid; gap: 14px; }
+.run { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 16px; align-items: center; font-size: 15px; }
+.run > span { color: var(--ink-2); }
+.run .pair { display: grid; gap: 3px; }
+.run .pair div { display: flex; align-items: center; gap: 10px; }
+.run i { display: block; height: 11px; border-radius: 0 2px 2px 0; background: var(--accent); width: calc(var(--v) * 82%); min-width: 2px; }
+.run .o i { background: var(--quiet); }
+.run b { font-weight: 600; font-size: 14px; }
+.facts div { padding: 22px 0; border-top: 1px solid var(--line); }
+.facts div:first-child { border-top: 0; padding-top: 0; }
+.facts b { display: block; font: 600 2.3rem/1.1 var(--sans); letter-spacing: -0.03em; margin-bottom: 6px; }
+.facts p { margin: 0; color: var(--ink-2); }
 
-.foot { border-top: 1px solid var(--line); padding: 30px 0 56px; font-size: 14px; color: var(--ink-2); }
-.foot p { margin: 0; max-width: 84ch; }
+.gap-table { border: 1px solid var(--line); background: var(--surface); overflow-x: auto; }
+.gap-table table { font-size: 15.5px; min-width: 720px; }
+.gap-table th, .gap-table td { padding: 16px 20px; vertical-align: top; }
+.gap-table th[scope=row] { font-weight: 600; width: 22%; }
+.gap-table tr.me > * { background: var(--tint); }
 
-@media (prefers-reduced-motion: no-preference) {
-  .btn, .seg [role=tab] { transition: background-color .15s, border-color .15s, color .15s, transform .15s; }
-  .btn:active { transform: translateY(1px); }
-  .status:not(.ok):not(.err)::before { animation: pulse 1.2s ease-in-out infinite; }
-  @keyframes pulse { 50% { opacity: .3; } }
-}
-@media (max-width: 920px) {
-  .hero { grid-template-columns: 1fr; gap: 40px; padding: 44px 0 60px; }
-  .desk { grid-template-columns: 1fr; }
+.cv { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 60px; align-items: start; }
+.cmp { display: grid; gap: 16px; margin: 0 0 26px; }
+.cmp div { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); align-items: center; gap: 14px; color: var(--ink-2); }
+.cmp span.v { display: flex; align-items: center; gap: 12px; }
+.cmp i { display: block; height: 26px; background: var(--quiet); width: calc(var(--v) * 80%); }
+.cmp .late i { background: var(--accent); }
+.cmp b { color: var(--ink); font-size: 1.15rem; font-weight: 600; }
+ul.plain { margin: 0; padding: 0; list-style: none; }
+ul.plain li { padding: 15px 0; border-top: 1px solid var(--line); color: var(--ink-2); }
+ul.plain li:first-child { border-top: 0; padding-top: 0; }
+ul.plain b { display: block; color: var(--ink); font-weight: 600; }
+.limits { max-width: 80ch; }
+
+footer { background: var(--head); color: var(--head-2); padding: 34px 0 52px; font-size: 14.5px; }
+footer p { margin: 0 0 8px; max-width: 92ch; }
+footer a { color: var(--on-head); }
+
+@media (max-width: 960px) {
+  .proof, .cv, .two { grid-template-columns: 1fr; gap: 44px; }
+  .two { gap: 0; margin-top: 40px; }
+  .two > div + div { border-left: 0; }
+  .desk { grid-template-columns: 1fr; min-height: 0; }
   .controls { border-right: 0; border-bottom: 1px solid var(--line); }
+  .output { min-height: 260px; }
+  section { padding: 64px 0; } .hero { padding: 48px 0 0; }
 }
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .wrap { width: calc(100% - 32px); }
-  .nav nav { display: none; }
-  .console { padding: 56px 0; }
-  .seg { width: 100%; }
-  .seg [role=tab] { flex: 1; padding-inline: 10px; }
-  .controls, .output { padding: 22px 18px; }
-  .bar-row { grid-template-columns: 5.5rem minmax(0, 1fr) 6.5rem; gap: 10px; }
+  .top nav { display: none; } .lang { margin-left: auto; }
+  .two > div, .controls, .output { padding-inline: 18px; }
+  .run { grid-template-columns: 5rem minmax(0, 1fr); gap: 10px; }
+  .cmp div { grid-template-columns: 1fr; gap: 4px; }
 }
 </style>
 </head>
 <body>
-<header class="nav"><div class="wrap">
-<a class="brand" href="#top">CX tools</a>
-<nav aria-label="Tools"><a href="#late">Late orders</a><a href="#triage">Review triage</a></nav>
-<a class="src" href="https://github.com/errer441122/ecommerce-cx-analytics">Source on GitHub</a>
+<header class="top"><div class="wrap">
+<a class="brand" href="#top">CX Analytics</a>
+<nav aria-label="Sections">
+<a href="#check" data-i18n="nav_check">The check</a>
+<a href="#proof" data-i18n="nav_proof">Proof</a>
+<a href="#cv" data-i18n="nav_cv">CV analysis</a>
+<a href="https://github.com/errer441122/ecommerce-cx-analytics">GitHub</a>
+</nav>
+<div class="lang" role="group" aria-label="Language"><button type="button" data-lang="en">EN</button><button type="button" data-lang="it">IT</button></div>
 </div></header>
 
 <main id="top">
-<section class="hero wrap">
+<div class="hero"><div class="wrap">
+<h1 data-i18n="h1">B2B customers don't write reviews. They send goods back.</h1>
+<p class="lead" data-i18n="lead">Their complaint is a credit note, and it stays in the ERP. This check reads it before the next campaign: which items to leave out, which customers to ask.</p>
+<div class="actions"><a class="btn" href="#check" data-i18n="cta">Check a campaign</a><a class="btn ghost" href="#proof" data-i18n="cta2">See the proof</a></div>
+<div class="two">
+<div><h3 data-i18n="two_a">Most credited item, by value</h3>
+<p class="what">Paper craft, little birdie</p><p class="how num" data-fmt="gbp" data-v="168470">£168,470</p>
+<p class="note" data-i18n="two_a_note">A typing error: 80,995 pieces, cancelled the same day. No customer sent it back.</p></div>
+<div><h3 data-i18n="two_b">Item most customers sent back</h3>
+<p class="what">Regency cakestand 3 tier</p><p class="how"><span class="num" data-i18n="two_b_n">170 of 1,314 customers</span></p>
+<p class="note" data-i18n="two_b_note">It is also the bestseller, so it goes into every newsletter of bestsellers. Two years of a real wholesaler.</p></div>
+</div>
+</div></div>
+
+<section id="check"><div class="wrap">
+<h2 data-i18n="check_h">Check the campaign before it goes out</h2>
+<p class="sub" data-i18n="check_sub">One export with invoices and credit notes, and the items you want to push. Nothing to install: the file stays in this browser, and the page runs the repository's own Python on your computer.</p>
+<div class="desk">
+<div class="controls">
+<label><span><span data-i18n="f_lines">Invoice and credit note lines (CSV)</span> <small data-i18n="f_lines_s">customer, date, item, quantity; also document type, amount, reason, sales rep</small></span><input type="file" id="c-lines" accept=".csv,.txt,.gz,text/csv"></label>
+<label><span><span data-i18n="f_codes">Items in the campaign</span> <small data-i18n="f_codes_s">item codes, one per line; leave empty to get the whole hold list</small></span><textarea id="c-codes" spellcheck="false"></textarea></label>
+<details><summary data-i18n="more">Thresholds</summary><div class="more">
+<label><span data-i18n="f_asof">Day of the check</span><input type="date" id="c-asof"></label>
+<label><span data-i18n="f_days">Days to look back</span><input type="number" id="c-days" value="60" min="7" max="730"></label>
+<label><span data-i18n="f_buyers">Customers who must have bought it, at least</span><input type="number" id="c-buyers" value="20" min="1"></label>
+<label><span data-i18n="f_back">Customers who must have sent it back, at least</span><input type="number" id="c-back" value="3" min="1"></label>
+<label><span data-i18n="f_times">Times the share of the other items, at least</span><input type="number" id="c-times" value="3" min="1" step="0.5"></label>
+</div></details>
+<button class="btn" id="c-run" data-i18n="run">Check the items</button>
+<button class="btn ghost" id="c-demo" data-i18n="run_demo">Try it on a real wholesaler</button>
+<p class="foot-note" data-i18n="demo_note">The example is a "20 bestsellers" newsletter on 27 October 2010, the start of the Christmas season: 166,581 real lines, 0.9 MB.</p>
+</div>
+<div class="output" id="c-out" aria-live="polite"><p class="empty"><b data-i18n="empty_b">No check yet</b><span data-i18n="empty">Here you get the items to leave out and why, the customers who sent them back, and those who bought them lately and have not complained yet.</span></p></div>
+</div>
+<p class="status" id="status" role="status"></p>
+</div></section>
+
+<section id="proof"><div class="wrap">
+<h2 data-i18n="proof_h">Would the hold list have been right?</h2>
+<p class="sub" data-i18n="proof_sub">Nine checks, 60 days apart, each made with what was known that day. Then only the purchases made after the check count: how many customers sent the item back within 60 days.</p>
+<div class="proof">
 <div>
-<h1>Handle the late order before it becomes a bad review.</h1>
-<p class="lead">Two tools for customer service: late shipments to contact first, and negative reviews sorted by urgency and owner.</p>
-<div class="hero-actions">
-<a class="btn" href="#tools">Open the tools</a>
-<p class="status" id="status" role="status">Loading the analysis engine (about 10 seconds the first time)</p>
+<h3 data-i18n="chart_h">Customers who sent the item back, by check date</h3>
+<p class="legend"><span><i></i><span data-i18n="lg_h">items on hold</span></span><span class="o"><i></i><span data-i18n="lg_o">all the other items</span></span></p>
+<div class="runs" id="runs"></div>
 </div>
-</div>
-<figure class="finding">
-<figcaption>Reviews with 4 or 5 stars</figcaption>
-<div class="f-row">
-<p class="f-head"><span>Delivered on time</span><span>89,277 orders</span></p>
-<p class="f-val">82.7%</p>
-<span class="f-bar" aria-hidden="true"><i style="--v:.827"></i></span>
-</div>
-<div class="f-row late">
-<p class="f-head"><span>Delivered late</span><span>6,362 orders</span></p>
-<p class="f-val">26.7%</p>
-<span class="f-bar" aria-hidden="true"><i style="--v:.267"></i></span>
-</div>
-<p class="f-src">95,639 real orders with a review (Olist, Brazil, 2016-2018). The full analysis is in the repository.</p>
-</figure>
-</section>
-
-<section class="console" id="tools" aria-labelledby="tools-title"><div class="wrap">
-<div class="console-head">
-<h2 id="tools-title">Work through today's lists</h2>
-<div class="seg" id="seg" role="tablist" aria-label="Tools">
-<button type="button" role="tab" id="tab-late" aria-controls="late" aria-selected="true">Late orders</button>
-<button type="button" role="tab" id="tab-triage" aria-controls="triage" aria-selected="false" tabindex="-1">Review triage</button>
-</div>
-</div>
-
-<div class="desk" role="tabpanel" id="late" aria-labelledby="tab-late">
-<div class="controls">
-<p>From the export of your shipping platform or carrier: orders past the promised date and still in transit, to contact before the
-customer complains and to keep out of promotions in Klaviyo (<code>delivery_issue=open</code>).</p>
-<label>Shipments CSV <input type="file" id="sh-file" accept=".csv,text/csv"></label>
-<label>As of <input type="date" id="sh-asof"></label>
-<label><span>Delivered late in the last <small>days</small></span><input type="number" id="sh-recent" value="7" min="1" max="60"></label>
-<details>
-<summary>Your column names</summary>
-<div class="column-names">
-<label>Order <input type="text" id="sh-order" value="order_id"></label>
-<label>Email <input type="text" id="sh-email" value="email"></label>
-<label>Promised date <input type="text" id="sh-promised" value="promised_date"></label>
-<label><span>Delivered date <small>empty while in transit</small></span><input type="text" id="sh-delivered" value="delivered_date"></label>
-<label>Carrier <input type="text" id="sh-carrier" value="carrier"></label>
-</div>
-</details>
-<div class="stack">
-<button class="btn" id="sh-run">Find late orders</button>
-<button class="btn ghost" id="sh-example">Try the example file</button>
-</div>
-</div>
-<div class="output" id="sh-out" aria-live="polite">
-<p class="empty"><b>No shipments loaded yet</b>The late orders appear here, longest wait first, with the late rate by carrier and the files for Klaviyo and customer service.</p>
-</div>
-</div>
-
-<div class="desk" role="tabpanel" id="triage" aria-labelledby="tab-triage" hidden>
-<div class="controls">
-<p>From any reviews export with a rating and the text: the reviews at or below the rating you choose, most urgent first, each with the
-team it goes to. The themes are keyword lists you can read, not a language model.</p>
-<label>Reviews CSV <input type="file" id="rv-file" accept=".csv,text/csv"></label>
-<label>Language of the reviews <select id="rv-lang"><option value="it">Italian</option><option value="en">English</option><option value="pt">Portuguese</option></select></label>
-<label>Ratings to triage <select id="rv-max"><option value="1">1 star</option><option value="2" selected>1-2 stars</option><option value="3">1-3 stars</option></select></label>
-<details>
-<summary>Your column names</summary>
-<div class="column-names">
-<p class="note">Common names are recognised. Fill these only if yours are different.</p>
-<label>Rating <input type="text" id="rv-rating" placeholder="rating, review_score, stars"></label>
-<label>Text <input type="text" id="rv-text" placeholder="body, comment, text"></label>
-<label>Title <input type="text" id="rv-title" placeholder="title"></label>
-<label>Date <input type="text" id="rv-date" placeholder="review_date, date"></label>
-<label>Order <input type="text" id="rv-order" placeholder="order_id"></label>
-<label>Email <input type="text" id="rv-email" placeholder="email, reviewer_email"></label>
-</div>
-</details>
-<div class="stack">
-<button class="btn" id="rv-run">Sort the reviews</button>
-<button class="btn ghost" id="rv-example">Try Italian examples</button>
-<button class="btn ghost" id="rv-olist">Try 38,813 Olist reviews</button>
-</div>
-<p class="note">The Olist reviews are real public data; the example downloads 17 MB.</p>
-</div>
-<div class="output" id="rv-out" aria-live="polite">
-<p class="empty"><b>No reviews loaded yet</b>The queue appears here as tickets, most urgent first: not received, then product problems, then delivery and service.</p>
+<div class="facts">
+<div><b class="num" data-i18n="fact1_b">6.9% against 1.5%</b><p data-i18n="fact1">Items on hold kept coming back almost five times as often as the rest. Whatever was wrong, it was still wrong.</p></div>
+<div><b class="num" data-i18n="fact2_b">19 of 180</b><p data-i18n="fact2">bestsellers were on hold: about two in every list of 20. Of the customers who bought those, 8.4% sent them back, against 1.5% for the other bestsellers.</p></div>
+<div><b class="num" data-i18n="fact3_b">10 of 10</b><p data-i18n="fact3">groups of similar customers: those who had just sent goods back ordered again at least as often. A credit note is not a customer leaving, so the list points at items.</p></div>
 </div>
 </div>
 </div></section>
+
+<section class="alt" id="gap"><div class="wrap">
+<h2 data-i18n="gap_h">What your software already does</h2>
+<p class="sub" data-i18n="gap_sub">If one of these already gives you the answer, use it.</p>
+<div class="gap-table"><table>
+<thead><tr><th scope="col" data-i18n="gap_c1">Tool</th><th scope="col" data-i18n="gap_c2">What it does</th><th scope="col" data-i18n="gap_c3">What stays open in B2B</th></tr></thead>
+<tbody>
+<tr><th scope="row" data-i18n="g1">Email platform</th><td data-i18n-html="g1a">Picks products for the newsletter. In Klaviyo a <a href="https://help.klaviyo.com/hc/en-us/articles/115005082787">product feed</a> filters by category, price, stock level and how customers engaged with them.</td><td data-i18n="g1b">Returns are not among the filters. Bestsellers get pushed even when customers are sending them back.</td></tr>
+<tr><th scope="row" data-i18n="g2">Reviews and surveys</th><td data-i18n="g2a">Stars, comments, NPS.</td><td data-i18n="g2b">They reach whoever answers, often not the person who opened the box.</td></tr>
+<tr><th scope="row" data-i18n="g3">Helpdesk</th><td data-i18n="g3a">Sorts the complaints that become tickets.</td><td data-i18n="g3b">A credit note agreed by phone with the rep never becomes a ticket.</td></tr>
+<tr><th scope="row" data-i18n="g4">ERP</th><td data-i18n="g4a">Lists credit notes by item, pieces or value.</td><td data-i18n="g4b">Typing errors end up on top: here £406,764 of the £713,010 credited was cancelled on the day it was invoiced. It does not count customers, and it is not where campaigns are prepared.</td></tr>
+<tr class="me"><th scope="row" data-i18n="g5">This check</th><td data-i18n="g5a">Leaves out same-day corrections, counts customers instead of pieces, compares with all the other items, and answers on the list you are about to promote.</td><td data-i18n="g5b">Why the goods came back, unless the export has a reason column.</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section id="cv"><div class="wrap cv">
+<div>
+<h2 data-i18n="cv_h">The review analysis in my CV</h2>
+<p class="sub" data-i18n="cv_sub">95,639 real reviews from Olist, a Brazilian marketplace. Late delivery is the factor most tied to a bad review. Share of reviews with 4 or 5 stars:</p>
+<div class="cmp">
+<div><span data-i18n="cv_on">Delivered on time</span><span class="v"><i style="--v:.827"></i><b class="num" data-fmt="pct1" data-v="0.827">82.7%</b></span></div>
+<div class="late"><span data-i18n="cv_late">Delivered late</span><span class="v"><i style="--v:.267"></i><b class="num" data-fmt="pct1" data-v="0.267">26.7%</b></span></div>
+</div>
+<div class="actions"><a class="btn" href="https://github.com/errer441122/ecommerce-cx-analytics/blob/main/reports/cx_driver_analysis.md" data-i18n="cv_cta">The full analysis</a><a class="btn ghost" href="https://github.com/errer441122/ecommerce-cx-analytics/blob/main/reports/customer_satisfaction_brief.md" data-i18n="cv_cta2">The brief</a></div>
+</div>
+<ul class="plain">
+<li data-i18n-html="cv1"><b>Statistical tests, NPS proxy, logistic regression</b>All in the full analysis. Olist has no real NPS question, so the stars stand in for it.</li>
+<li data-i18n-html="cv2"><b>Why it was not enough</b>It describes a shop where people leave stars. In B2B there are none, and a helpdesk already sorts the complaints it receives.</li>
+<li data-i18n-html="cv3"><b>What came next</b>The same question, asked where B2B customers do answer: the credit notes. My own analysis of the wholesaler had dropped them in the first cleaning step.</li>
+</ul>
+</div></section>
+
+<section class="alt" id="limits"><div class="wrap">
+<h2 data-i18n="lim_h">What it cannot do</h2>
+<ul class="plain limits">
+<li data-i18n-html="l1"><b>Say why the goods came back.</b>If the export has a reason column it shows the most frequent one. Otherwise the list says where to look, and a person has to ask.</li>
+<li data-i18n-html="l2"><b>Judge items that sell little.</b>Below 20 customers in 60 days the answer is "too few to say". The thresholds can be lowered, at the price of more false alarms.</li>
+<li data-i18n-html="l3"><b>Read every company's credit notes the same way.</b>In the public data an invoice starting with C is a cancellation; the ones dated after the purchase are read as goods sent back. Rebates and price corrections without a quantity are left out.</li>
+<li data-i18n-html="l4"><b>Prove it on a company's own catalogue, yet.</b>It has been tested on public data and on files written by hand. Leaving the items out of a real campaign is still to be tried.</li>
+</ul>
+</div></section>
 </main>
 
-<footer class="foot"><div class="wrap">
-<p>This page runs the repository's own Python in your browser with <a href="https://pyodide.org">Pyodide</a>: the same functions and
-tests as the command line. Example files are handwritten with <code>example.com</code> addresses; the Olist reviews are real public
-data (Kaggle, CC BY-NC-SA 4.0).</p>
+<footer><div class="wrap">
+<p data-i18n-html="foot1">Data: Chen, D. (2019), <i>Online Retail II</i>, UCI, CC BY 4.0. Reviews: Olist, Kaggle, CC BY-NC-SA 4.0, used in a non-commercial portfolio.</p>
+<p data-i18n-html="foot2">Riccardo Capanna, Digital Marketing student. Code written with AI assistants; the question, the rules and the checks are mine. <a href="https://github.com/errer441122">GitHub</a> · <a href="https://www.linkedin.com/in/riccardo-capanna-039a43415/">LinkedIn</a></p>
 </div></footer>
 
-<script src="https://cdn.jsdelivr.net/pyodide/v0.28.3/full/pyodide.js" integrity="sha384-4X7gSPzQ4pHfjTE5aBEPJAQcHu55sciq+NWO3OUOZ3zHSJhn4te9CBjUyRSr+nei" crossorigin="anonymous"></script>
 <script>
 "use strict";
 const REPO = "errer441122/ecommerce-cx-analytics";
 const BASE = location.hostname.endsWith("github.io") ? `https://raw.githubusercontent.com/${REPO}/main/` : "../";
-const FILES = ["late_orders.py", "review_triage.py", "web_app.py"];
+const FILES = ["erp_export.py", "credit_notes.py", "web_app.py"];
+const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/pyodide.js";
+const PYODIDE_SRI = "sha384-4X7gSPzQ4pHfjTE5aBEPJAQcHu55sciq+NWO3OUOZ3zHSJhn4te9CBjUyRSr+nei";
 const $ = (id) => document.getElementById(id);
 
-// Segmented control (ARIA tabs). Links to #late and #triage open the right tool.
-const tabList = [...$("seg").querySelectorAll("[role=tab]")];
-function showTool(id, focus = false) {
-  const tab = tabList.find((t) => t.getAttribute("aria-controls") === id);
-  if (!tab) return false;
-  for (const t of tabList) {
-    const on = t === tab;
-    t.setAttribute("aria-selected", String(on));
-    t.tabIndex = on ? 0 : -1;
-    $(t.getAttribute("aria-controls")).hidden = !on;
-  }
-  if (focus) tab.focus();
-  return true;
-}
-$("seg").addEventListener("click", (e) => { const t = e.target.closest("[role=tab]"); if (t) showTool(t.getAttribute("aria-controls")); });
-$("seg").addEventListener("keydown", (e) => {
-  const i = tabList.indexOf(document.activeElement);
-  const next = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: tabList.length - 1 }[e.key];
-  if (i < 0 || next === undefined) return;
-  e.preventDefault();
-  showTool(tabList[(next + tabList.length) % tabList.length].getAttribute("aria-controls"), true);
-});
-for (const a of document.querySelectorAll('a[href^="#"]')) a.addEventListener("click", (e) => {
-  if (!showTool(a.hash.slice(1))) return;
-  e.preventDefault();
-  history.replaceState(null, "", a.hash);
-  $("tools").scrollIntoView();
-});
-if (showTool(location.hash.slice(1))) $("tools").scrollIntoView();
+// English lives in the HTML; this is the Italian, plus the texts scripts write in both.
+const IT = {
+  title: "CX Analytics: cosa dicono i clienti B2B quando rendono la merce",
+  nav_check: "Il controllo", nav_proof: "La prova", nav_cv: "Analisi del CV",
+  h1: "I clienti B2B non scrivono recensioni. Rendono la merce.",
+  lead: "Il loro reclamo è una nota di credito, e resta nel gestionale. Questo controllo la legge prima della prossima campagna: quali articoli lasciare fuori, quali clienti sentire.",
+  cta: "Controlla una campagna", cta2: "Vedi la prova",
+  two_a: "Articolo più accreditato, per valore", two_a_note: "Un errore di battitura: 80.995 pezzi, annullati lo stesso giorno. Nessun cliente lo ha reso.",
+  two_b: "Articolo reso da più clienti", two_b_n: "170 clienti su 1.314", two_b_note: "È anche il più venduto, quindi finisce in ogni newsletter dei più venduti. Due anni di un vero grossista.",
+  check_h: "Controlla la campagna prima che parta",
+  check_sub: "Un'estrazione con fatture e note di credito, e gli articoli che vuoi spingere. Niente da installare: il file resta in questo browser e la pagina esegue sul tuo computer il Python del repository.",
+  f_lines: "Righe di fatture e note di credito (CSV)", f_lines_s: "cliente, data, articolo, quantità; anche tipo documento, importo, causale, agente",
+  f_codes: "Articoli della campagna", f_codes_s: "codici articolo, uno per riga; vuoto per avere tutta la lista",
+  more: "Soglie", f_asof: "Giorno del controllo", f_days: "Giorni da guardare indietro", f_buyers: "Clienti che devono averlo comprato, almeno",
+  f_back: "Clienti che devono averlo reso, almeno", f_times: "Volte la quota degli altri articoli, almeno", run: "Controlla gli articoli", run_demo: "Provalo su un vero grossista",
+  demo_note: "L'esempio è una newsletter \"20 più venduti\" al 27 ottobre 2010, inizio della stagione natalizia: 166.581 righe reali, 0,9 MB.",
+  empty_b: "Nessun controllo", empty: "Qui trovi gli articoli da lasciare fuori e perché, i clienti che li hanno resi e quelli che li hanno comprati da poco e non si sono ancora lamentati.",
+  proof_h: "La lista avrebbe avuto ragione?",
+  proof_sub: "Nove controlli, uno ogni 60 giorni, fatti con quello che si sapeva quel giorno. Poi contano solo gli acquisti successivi: quanti clienti hanno reso l'articolo entro 60 giorni.",
+  chart_h: "Clienti che hanno reso l'articolo, per data del controllo", lg_h: "articoli fermati", lg_o: "tutti gli altri",
+  fact1_b: "6,9% contro 1,5%", fact1: "Gli articoli fermati sono tornati indietro quasi cinque volte più degli altri. Qualunque fosse il problema, c'era ancora.",
+  fact2_b: "19 su 180", fact2: "tra i più venduti erano da fermare: circa due in ogni lista di 20. Di chi li ha comprati, l'8,4% li ha resi, contro l'1,5% per gli altri più venduti.",
+  fact3_b: "10 su 10", fact3: "gruppi di clienti simili: chi aveva appena reso merce ha riordinato almeno quanto gli altri. Una nota di credito non è un cliente che se ne va: per questo la lista indica articoli.",
+  gap_h: "Cosa fa già il tuo software", gap_sub: "Se uno di questi ti dà già la risposta, usa quello.",
+  gap_c1: "Strumento", gap_c2: "Cosa fa", gap_c3: "Cosa resta scoperto nel B2B",
+  g1: "Piattaforma email", g1a: "Sceglie i prodotti della newsletter. In Klaviyo un <a href=\"https://help.klaviyo.com/hc/en-us/articles/115005082787\">feed prodotti</a> filtra per categoria, prezzo, scorte e interazioni dei clienti.",
+  g1b: "I resi non sono tra i filtri. I più venduti vengono spinti anche quando i clienti li stanno rendendo.",
+  g2: "Recensioni e questionari", g2a: "Stelle, commenti, NPS.", g2b: "Raggiungono chi risponde, che spesso non è chi ha aperto la scatola.",
+  g3: "Helpdesk", g3a: "Ordina i reclami che diventano ticket.", g3b: "Una nota di credito concordata al telefono con l'agente non diventa mai un ticket.",
+  g4: "Gestionale", g4a: "Elenca le note di credito per articolo, pezzi o valore.", g4b: "In cima finiscono gli errori di battitura: qui £406.764 dei £713.010 accreditati sono stati annullati il giorno stesso della fattura. Non conta i clienti, e non è dove si preparano le campagne.",
+  g5: "Questo controllo", g5a: "Esclude le correzioni in giornata, conta i clienti invece dei pezzi, confronta con tutti gli altri articoli e risponde sulla lista che stai per promuovere.", g5b: "Il motivo del reso, se l'estrazione non ha una colonna causale.",
+  cv_h: "L'analisi delle recensioni del mio CV", cv_sub: "95.639 recensioni reali di Olist, un marketplace brasiliano. La consegna in ritardo è il fattore più legato a una recensione negativa. Quota di recensioni da 4 o 5 stelle:",
+  cv_on: "Consegnati in tempo", cv_late: "Consegnati in ritardo", cv_cta: "L'analisi completa", cv_cta2: "Il brief",
+  cv1: "<b>Test statistici, proxy NPS, regressione logistica</b>Sono tutti nell'analisi completa. Olist non ha una vera domanda NPS: al suo posto ci sono le stelle.",
+  cv2: "<b>Perché non bastava</b>Descrive un negozio dove la gente lascia le stelle. Nel B2B non ce ne sono, e un helpdesk ordina già i reclami che riceve.",
+  cv3: "<b>Cosa è venuto dopo</b>La stessa domanda, fatta dove i clienti B2B rispondono davvero: le note di credito. La mia analisi del grossista le aveva scartate al primo passaggio di pulizia.",
+  lim_h: "Cosa non sa fare",
+  l1: "<b>Dire perché la merce è tornata.</b>Se l'estrazione ha una causale, mostra la più frequente. Altrimenti la lista dice dove guardare, e qualcuno deve chiedere.",
+  l2: "<b>Giudicare gli articoli che vendono poco.</b>Sotto i 20 clienti in 60 giorni la risposta è \"troppo pochi per dirlo\". Le soglie si possono abbassare, al prezzo di più falsi allarmi.",
+  l3: "<b>Leggere allo stesso modo le note di credito di ogni azienda.</b>Nei dati pubblici una fattura che inizia con C è un annullamento; quelli con data successiva all'acquisto sono letti come merce resa. Premi e rettifiche di prezzo senza quantità restano fuori.",
+  l4: "<b>Dimostrarlo sul catalogo di un'azienda, per ora.</b>È stato provato su dati pubblici e su file scritti a mano. Lasciare davvero fuori quegli articoli da una campagna è ancora da provare.",
+  foot1: "Dati: Chen, D. (2019), <i>Online Retail II</i>, UCI, CC BY 4.0. Recensioni: Olist, Kaggle, CC BY-NC-SA 4.0, usate in un portfolio non commerciale.",
+  foot2: "Riccardo Capanna, studente di Digital Marketing. Codice scritto con assistenti AI; la domanda, le regole e i controlli sono miei. <a href=\"https://github.com/errer441122\">GitHub</a> · <a href=\"https://www.linkedin.com/in/riccardo-capanna-039a43415/\">LinkedIn</a>",
+};
+const SAY = {
+  en: {
+    loading: "Loading the analysis engine: about 10 seconds the first time.", ready: "Ready. Your file stays on this computer.", working: "Working...",
+    engine_err: "The engine did not load. Check the connection and try again.", choose: "Choose the file first.",
+    s_hold: "of {n} campaign items to leave out", s_held: "items on hold in the whole catalogue", s_ask: "customers bought them in the last 30 days and have not complained",
+    camp_h: "Your campaign", hold_h: "Items on hold", hold_p: "Usual share of customers who send an item back in {d} days: {u}.", none: "No item is on hold with these thresholds.",
+    credits: "Credit lines in the file: {a} goods sent back, {b} same-day corrections left out, {c} without a purchase in the file.",
+    short_file: "Many credit lines have no purchase in the file: load a longer period to count them.",
+    dl: "Download the files", keep: "customers.csv lists who sent the items back and who bought them in the last 30 days without complaining, with the sales rep if the export has it.",
+    verdict: { hold: "leave out", ok: "ok", few: "too few to say", unknown: "not in the file" },
+    ch: ["item", "verdict", "name", "sent back by", "bought by", "vs others"], hh: ["item", "name", "sent back by", "bought by", "vs others", "main reason"], times: "{x}×",
+  },
+  it: {
+    loading: "Carico il motore di analisi: circa 10 secondi la prima volta.", ready: "Pronto. Il file resta su questo computer.", working: "Ci sto lavorando...",
+    engine_err: "Il motore non si è caricato. Controlla la connessione e riprova.", choose: "Scegli prima il file.",
+    s_hold: "articoli della campagna da lasciare fuori, su {n}", s_held: "articoli fermati in tutto il catalogo", s_ask: "clienti li hanno comprati negli ultimi 30 giorni e non si sono lamentati",
+    camp_h: "La tua campagna", hold_h: "Articoli fermati", hold_p: "Quota abituale di clienti che rendono un articolo in {d} giorni: {u}.", none: "Con queste soglie nessun articolo è da fermare.",
+    credits: "Righe di credito nel file: {a} di merce resa, {b} correzioni in giornata escluse, {c} senza un acquisto nel file.",
+    short_file: "Molte righe di credito non hanno un acquisto nel file: carica un periodo più lungo per contarle.",
+    dl: "Scarica i file", keep: "customers.csv elenca chi ha reso gli articoli e chi li ha comprati negli ultimi 30 giorni senza lamentarsi, con l'agente se l'estrazione lo contiene.",
+    verdict: { hold: "lascia fuori", ok: "ok", few: "troppo pochi per dirlo", unknown: "non è nel file" },
+    ch: ["articolo", "verdetto", "nome", "reso da", "comprato da", "vs altri"], hh: ["articolo", "nome", "reso da", "comprato da", "vs altri", "causale più frequente"], times: "{x}×",
+  },
+};
+// The engine answers in English; these are the problems a file can have.
+const PROBLEMS_IT = [
+  [/^column not found \((.*)\)\. The file has: (.*)$/, "colonna non trovata ($1). Il file ha: $2"],
+  [/^line (\d+): the date (.*) is neither.*$/, "riga $1: la data $2 non è né AAAA-MM-GG né GG/MM/AAAA"],
+  [/^line (\d+): (.*) is not a number$/, "riga $1: $2 non è un numero"],
+  [/^no sales lines in the file$/, "nel file non ci sono righe di vendita"],
+  [/^no sales in the (\d+) days before (.*)$/, "nessuna vendita nei $1 giorni prima del $2"],
+];
 
-function setStatus(text, kind) {
-  const s = $("status");
-  s.textContent = text;
-  s.className = "status" + (kind ? " " + kind : "");
-}
+let LANG = "en";
+const EN = {};
+const explain = (text) => LANG === "it" ? PROBLEMS_IT.reduce((t, [re, it]) => t.replace(re, it), text) : text;
+const say = (key, vars = {}) => Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v), SAY[LANG][key]);
+const nf = (x, o) => new Intl.NumberFormat(LANG, { useGrouping: "always", ...o }).format(x);
+const pct1 = (x) => nf(x, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const day = (iso) => new Intl.DateTimeFormat(LANG === "it" ? "it-IT" : "en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso + "T12:00:00"));
+const FMT = { int: (x) => nf(x), gbp: (x) => nf(x, { style: "currency", currency: "GBP", maximumFractionDigits: 0 }),
+  pct1: (x) => nf(x, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }) };
+let redraw = {};
 
-let enginePromise = null;
-function engine() {
-  if (!enginePromise) {
-    enginePromise = (async () => {
-      const py = await loadPyodide();
-      const dir = "/home/pyodide/app";
-      py.FS.mkdirTree(dir);
-      for (const f of FILES) {
-        const r = await fetch(BASE + "src/" + f);
-        if (!r.ok) throw new Error(`could not load ${f} (${r.status})`);
-        py.FS.writeFile(`${dir}/${f}`, await r.text());
-      }
-      py.runPython(`import sys; sys.path.insert(0, "${dir}")`);
-      setStatus("Ready. Your files stay on this computer.", "ok");
-      return py;
-    })().catch((e) => {
-      enginePromise = null;
-      setStatus("The engine did not load: " + e.message + ". Check the connection and reload.", "err");
-      throw e;
+function setLang(lang) {
+  LANG = lang === "it" ? "it" : "en";
+  document.documentElement.lang = LANG;
+  for (const [attr, prop] of [["data-i18n", "textContent"], ["data-i18n-html", "innerHTML"]])
+    document.querySelectorAll(`[${attr}]`).forEach((n) => {
+      const k = n.getAttribute(attr);
+      if (!(k in EN)) EN[k] = n[prop];
+      n[prop] = LANG === "it" ? IT[k] : EN[k];   // fixed texts of this page, never user data
     });
+  document.querySelectorAll("[data-fmt]").forEach((n) => { n.textContent = FMT[n.dataset.fmt](+n.dataset.v); });
+  EN.title ??= document.title;
+  document.title = LANG === "it" ? IT.title : EN.title;
+  document.querySelectorAll(".lang button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === LANG)));
+  try { localStorage.setItem("portfolio_lang", LANG); } catch {}
+  Object.values(redraw).forEach((f) => f());
+}
+
+function el(tag, props = {}, ...kids) {
+  const n = Object.assign(document.createElement(tag), props);
+  n.append(...kids.map((k) => (k instanceof Node ? k : String(k))));
+  return n;
+}
+function table(head, rows) {
+  return el("div", { className: "scroll" }, el("table", {},
+    el("thead", {}, el("tr", {}, ...head.map((h) => el("th", { scope: "col" }, h)))),
+    el("tbody", {}, ...rows.map((r) => el("tr", {}, ...r.map((c) => el("td", {}, c)))))));
+}
+const problem = (text) => [el("p", { className: "msg err" }, text)];
+const timesText = (x) => x === null ? "" : say("times", { x: nf(x, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) });
+
+function show(r) {
+  const out = [], stat = (v, k, vars) => el("div", {}, el("b", { className: "num" }, nf(v)), el("span", {}, say(k, vars)));
+  const camp = r.campaign || [], bad = camp.filter((x) => x.verdict === "hold").length;
+  out.push(el("div", { className: "stats" }, ...(camp.length ? [stat(bad, "s_hold", { n: nf(camp.length) })] : []), stat(r.held, "s_held"), stat(r.to_ask, "s_ask")));
+  if (camp.length) {
+    const order = { hold: 0, unknown: 1, few: 2, ok: 3 };
+    out.push(el("h3", {}, say("camp_h")), table(SAY[LANG].ch, [...camp].sort((a, b) => order[a.verdict] - order[b.verdict]).map((x) => [x.item,
+      el("span", { className: "tag " + x.verdict }, SAY[LANG].verdict[x.verdict]), x.description, nf(x.back), nf(x.buyers), timesText(x.times)])));
   }
+  out.push(el("h3", {}, say("hold_h")), el("p", {}, say("hold_p", { d: r.days, u: pct1(r.usual) })));
+  const cols = r.hold.some((x) => x.reason) ? 6 : 5;
+  out.push(r.hold.length ? table(SAY[LANG].hh.slice(0, cols), r.hold.map((x) => [x.item, x.description, nf(x.back), nf(x.buyers), timesText(x.times), x.reason].slice(0, cols))) : el("p", {}, say("none")));
+  const save = el("button", { className: "btn small", type: "button" }, say("dl"));
+  save.addEventListener("click", () => Object.entries(r.files).forEach(([name, text], i) => setTimeout(() => {
+    const a = el("a", { href: URL.createObjectURL(new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" })), download: name });
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }, 350 * i)));
+  const c = r.credits;
+  out.push(el("div", { className: "actions" }, save), el("p", { className: "foot-note" }, say("keep")),
+    el("p", { className: "foot-note" }, say("credits", { a: nf(c.sent_back.lines), b: nf(c.correction.lines), c: nf(c.unmatched.lines) })));
+  if (c.unmatched.lines > c.sent_back.lines) out.push(el("p", { className: "msg" }, say("short_file")));
+  return out;
+}
+
+// ---------- the engine: the repository's Python, in the browser
+let enginePromise = null;
+function status(key, err) { $("status").className = "status" + (err ? " err" : ""); redraw.status = () => { $("status").textContent = key ? say(key) : ""; }; redraw.status(); }
+function engine() {
+  enginePromise ??= (async () => {
+    status("loading");
+    await new Promise((ok, no) => document.head.append(Object.assign(document.createElement("script"),
+      { src: PYODIDE, integrity: PYODIDE_SRI, crossOrigin: "anonymous", onload: ok, onerror: no })));
+    const py = await loadPyodide();
+    py.FS.mkdirTree("/app");
+    for (const f of FILES) {
+      const r = await fetch(BASE + "src/" + f);
+      if (!r.ok) throw new Error(f);
+      py.FS.writeFile("/app/" + f, await r.text());
+    }
+    py.runPython("import sys; sys.path.insert(0, '/app'); import web_app");
+    status("ready");
+    return py;
+  })().catch((e) => { enginePromise = null; status("engine_err", true); throw e; });
   return enginePromise;
 }
-
-async function fileText(input) {
-  const f = input.files[0];
-  if (!f) return null;
-  const buf = await f.arrayBuffer();
-  try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); }
-  catch { return new TextDecoder("windows-1252").decode(buf); }  // older Excel exports
-}
-async function urlText(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`could not load the example (${r.status})`);
-  return r.text();
-}
-
-// DOM helpers: user data only ever goes through textContent.
-function el(tag, props = {}, ...children) {
-  const node = Object.assign(document.createElement(tag), props);
-  for (const c of children) node.append(c instanceof Node ? c : document.createTextNode(String(c)));
-  return node;
-}
-function table(header, rows, cell = (h, v) => v, limit = 25) {
-  const body = rows.slice(0, limit).map((r) => el("tr", {}, ...r.map((c, i) => el("td", {}, cell(header[i], c)))));
-  const parts = [el("div", { className: "scroll" }, el("table", {},
-    el("thead", {}, el("tr", {}, ...header.map((h) => el("th", {}, h)))), el("tbody", {}, ...body)))];
-  if (rows.length > limit) parts.push(el("p", { className: "note" }, `Showing ${limit} of ${rows.length.toLocaleString("en")}. The download has them all.`));
-  return parts;
-}
-const lateCell = (h, v) => h === "days_late" ? el("span", { className: "late-by" }, `${v} day${v === 1 ? "" : "s"} late`) : v;
-function stat(value, label) { return el("div", { className: "stat" }, el("b", {}, value), el("span", {}, label)); }
-// One series, one hue; grey marks a row with too few orders to read as a trend.
-function bars(rows) {
-  return el("div", { className: "bars" }, ...rows.map(([name, share, value, faint]) => el("div", { className: "bar-row" + (faint ? " faint" : "") },
-    el("span", {}, name), el("span", {}, el("i", { style: `width:${share * 100}%` })), el("b", {}, ...value))));
-}
-function downloadButton(label, name, text) {
-  const b = el("button", { className: "btn ghost", type: "button" }, label);
-  b.addEventListener("click", () => {
-    const a = el("a", { href: URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" })), download: name });
-    document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  });
-  return b;
-}
-const pct = (x) => `${(x * 100).toFixed(1)}%`;
-const nice = (k) => k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, " ");
-
-// While a tool runs, the previous result stays on screen, dimmed.
-async function run(button, out, task, render) {
-  button.disabled = true;
-  out.setAttribute("aria-busy", "true");
-  if (!out.dataset.used) out.replaceChildren(el("p", { className: "empty" }, "Working..."));
+async function call(btn, prepare) {
+  const out = $("c-out");
+  btn.disabled = true; out.setAttribute("aria-busy", "true");
   try {
+    const job = await prepare();
+    if (!job) { redraw.out = () => out.replaceChildren(...problem(say("choose"))); redraw.out(); return; }
     const py = await engine();
-    const r = await task(py);
-    out.replaceChildren(...(r.error ? [el("p", { className: "msg bad" }, r.error)] : render(r)));
+    status("working");
+    await new Promise((r) => setTimeout(r, 30));
+    py.FS.writeFile("/tmp/lines.csv", new Uint8Array(job.file));
+    const r = JSON.parse(py.globals.get("web_app")[job.fn]("/tmp/lines.csv", ...job.args));
+    redraw.out = () => out.replaceChildren(...(r.error ? problem(explain(r.error)) : show(r)));
+    redraw.out();
+    status("ready");
   } catch (e) {
-    out.replaceChildren(el("p", { className: "msg bad" }, e.message || String(e)));
-  } finally {
-    button.disabled = false;
-    out.removeAttribute("aria-busy");
-    out.dataset.used = "1";
-  }
+    if (enginePromise) { out.replaceChildren(...problem(String(e.message || e).split("\n").filter(Boolean).pop())); status(""); }
+  } finally { btn.disabled = false; out.removeAttribute("aria-busy"); }
 }
-function call(py, code, files = {}, values = {}) {
-  for (const [path, text] of Object.entries(files)) py.FS.writeFile(path, text);
-  for (const [name, value] of Object.entries(values)) py.globals.set(name, value);
-  return JSON.parse(py.runPython("import web_app\n" + code));
-}
+let demoFile = null;
+$("c-demo").addEventListener("click", () => call($("c-demo"), async () => {
+  demoFile ??= await (await fetch(BASE + "data/wholesale_demo.csv.gz")).arrayBuffer();
+  return { fn: "demo", file: demoFile, args: [] };
+}));
+$("c-run").addEventListener("click", () => call($("c-run"), async () => {
+  const f = $("c-lines").files[0];
+  return f ? { fn: "check", file: await f.arrayBuffer(), args: [$("c-codes").value, $("c-asof").value, Number($("c-days").value) || 60,
+    Number($("c-buyers").value) || 20, Number($("c-back").value) || 3, Number($("c-times").value) || 3] } : null;
+}));
 
-function showLate(r) {
-  const few = r.carriers.some((c) => c.delivered < r.min_carrier_orders);
-  return [
-    el("div", { className: "stats" },
-      stat(r.open.length.toLocaleString("en"), "late, not delivered yet"),
-      stat(r.delivered.length.toLocaleString("en"), "delivered late recently"),
-      stat(r.shipments.toLocaleString("en"), `shipments with a promised date, as of ${r.as_of}`)),
-    el("h4", {}, "Contact first, and keep out of promotions"),
-    ...(r.open.length ? table(r.open_header, r.open, lateCell) : [el("p", { className: "note" }, "No order is late and still in transit.")]),
-    el("div", { className: "actions" }, downloadButton("Download late_open.csv", "late_open.csv", r.open_csv)),
-    el("h4", {}, "Delivered late: follow up"),
-    ...(r.delivered.length ? table(r.delivered_header, r.delivered, lateCell) : [el("p", { className: "note" }, "None in this window.")]),
-    el("div", { className: "actions" }, downloadButton("Download late_delivered.csv", "late_delivered.csv", r.delivered_csv)),
-    el("h4", {}, "Late rate by carrier"),
-    ...(r.carriers.length
-      ? [bars(r.carriers.map((c) => [c.carrier, c.late_rate, [pct(c.late_rate), el("small", {}, ` ${c.late} of ${c.delivered}`)], c.delivered < r.min_carrier_orders]))]
-      : [el("p", { className: "note" }, "No delivered orders yet.")]),
-    ...(few ? [el("p", { className: "note" }, `Grey: fewer than ${r.min_carrier_orders} delivered orders, too few to call a trend.`)] : []),
-  ];
-}
+// ---------- the proof, from the file the backtest writes
+fetch("credit_notes.json").then((r) => r.json()).then((r) => {
+  redraw.proof = () => $("runs").replaceChildren(...r.checks.map((c) => {
+    const line = (cls, p) => { const v = p[1] / p[0], i = el("i"); i.style.setProperty("--v", v / .1); return el("div", { className: cls }, i, el("b", { className: "num" }, pct1(v))); };
+    return el("div", { className: "run" }, el("span", {}, day(c.day)), el("div", { className: "pair" }, line("", c.held_after), line("o", c.other_after)));
+  }));
+  redraw.proof();
+}).catch(() => {});
 
-function showTriage(r) {
-  const [U, T, O, R, D, ORD, E, X] = ["urgency", "theme", "owner", "rating", "date", "order_id", "email", "excerpt"].map((h) => r.header.indexOf(h));
-  const tickets = r.queue.slice(0, 25).map((q) => {
-    const meta = [q[ORD], q[D], q[E]].filter(Boolean);
-    return el("article", { className: `ticket u${q[U]}` },
-      el("header", {}, el("b", {}, nice(q[T])), el("span", {}, `to ${q[O]}`), el("span", {}, `${q[R]} star${q[R] === "1" ? "" : "s"}`)),
-      el("p", {}, q[X]),
-      ...(meta.length ? [el("footer", {}, ...meta.map((v) => el("span", {}, v)))] : []));
-  });
-  const themes = Object.entries(r.by_theme);
-  const max = Math.max(1, ...themes.map(([, v]) => v));
-  return [
-    el("div", { className: "stats" }, stat(r.queued.toLocaleString("en"), `reviews to handle, of ${r.reviews.toLocaleString("en")}`)),
-    ...(themes.length ? [el("h4", {}, "What the queue is about"), bars(themes.map(([k, v]) => [nice(k), v / max, [v.toLocaleString("en")]]))] : []),
-    el("h4", {}, "The queue, most urgent first"),
-    ...(r.queue.length ? [el("div", { className: "tickets" }, ...tickets)] : [el("p", { className: "note" }, "No review at or below this rating.")]),
-    ...(r.queue.length > 25 ? [el("p", { className: "note" }, `Showing 25 of ${r.queue.length.toLocaleString("en")}. The download has them all.`)] : []),
-    el("div", { className: "actions" }, downloadButton("Download triage.csv", "triage.csv", r.triage_csv)),
-    el("h4", {}, "Themes across all reviews"),
-    ...table(r.themes_header, r.themes),
-    el("div", { className: "actions" }, downloadButton("Download themes.csv", "themes.csv", r.themes_csv)),
-  ];
-}
-
-$("sh-asof").value = new Date().toISOString().slice(0, 10);
-function lateArgs() {
-  return { as_of: $("sh-asof").value, recent: Number($("sh-recent").value) || 7, c_order: $("sh-order").value,
-           c_email: $("sh-email").value, c_promised: $("sh-promised").value, c_delivered: $("sh-delivered").value,
-           c_carrier: $("sh-carrier").value };
-}
-const LATE_CALL = 'web_app.late("/tmp/shipments.csv", as_of, recent, c_order, c_email, c_promised, c_delivered, c_carrier)';
-$("sh-run").addEventListener("click", () => run($("sh-run"), $("sh-out"), async (py) => {
-  const text = await fileText($("sh-file"));
-  if (!text) return { error: "Choose the shipments export first." };
-  return call(py, LATE_CALL, { "/tmp/shipments.csv": text }, lateArgs());
-}, showLate));
-$("sh-example").addEventListener("click", () => run($("sh-example"), $("sh-out"), async (py) => {
-  $("sh-asof").value = "2026-06-01";
-  for (const [id, v] of [["sh-order", "order_id"], ["sh-email", "email"], ["sh-promised", "promised_date"], ["sh-delivered", "delivered_date"], ["sh-carrier", "carrier"]]) $(id).value = v;
-  return call(py, LATE_CALL, { "/tmp/shipments.csv": await urlText(BASE + "data/shipments_example.csv") }, lateArgs());
-}, showLate));
-
-function reviewArgs() {
-  const columns = {};
-  for (const k of ["rating", "text", "title", "date", "order", "email"]) columns[k] = $("rv-" + k).value.trim();
-  return { lang: $("rv-lang").value, max_rating: Number($("rv-max").value), columns: JSON.stringify(columns) };
-}
-const TRIAGE_CALL = 'web_app.triage("/tmp/reviews.csv", lang, max_rating, columns)';
-$("rv-run").addEventListener("click", () => run($("rv-run"), $("rv-out"), async (py) => {
-  const text = await fileText($("rv-file"));
-  if (!text) return { error: "Choose the reviews export first." };
-  return call(py, TRIAGE_CALL, { "/tmp/reviews.csv": text }, reviewArgs());
-}, showTriage));
-$("rv-example").addEventListener("click", () => run($("rv-example"), $("rv-out"), async (py) => {
-  $("rv-lang").value = "it";
-  return call(py, TRIAGE_CALL, { "/tmp/reviews.csv": await urlText(BASE + "data/reviews_example.csv") }, reviewArgs());
-}, showTriage));
-$("rv-olist").addEventListener("click", () => run($("rv-olist"), $("rv-out"), async (py) => {
-  const [reviews, comments] = await Promise.all([urlText(BASE + "data/olist_reviews.csv"), urlText(BASE + "data/olist_review_comments.csv")]);
-  return call(py, 'web_app.olist_demo("/tmp/olist_reviews.csv", "/tmp/olist_comments.csv")',
-              { "/tmp/olist_reviews.csv": reviews, "/tmp/olist_comments.csv": comments });
-}, showTriage));
-
-engine().catch(() => {});
+document.querySelectorAll(".lang button").forEach((b) => b.addEventListener("click", () => setLang(b.dataset.lang)));
+let saved = null;
+try { saved = localStorage.getItem("portfolio_lang"); } catch {}
+setLang(saved || (navigator.language || "en").slice(0, 2));
 </script>
 </body>
 </html>

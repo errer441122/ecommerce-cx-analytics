@@ -1,155 +1,107 @@
-# E-commerce CX Analytics: what makes customers unhappy?
+# E-commerce CX Analytics
 
-A practice project on a public dataset. The question is one a Customer
-Experience team asks every month: **why do some customers leave a bad review,
-and where should we act first?**
+**B2B customers don't write reviews. They send goods back.** This check reads credit notes as customer feedback: which items to leave out of the next campaign, and which customers to ask.
 
-The data is about 95,000 real customer reviews from Olist, a Brazilian online
-marketplace (2016 to 2018), joined with the delivery details of each order. It
-is not client work.
+**[Open the page](https://errer441122.github.io/ecommerce-cx-analytics/)** · [the proof](reports/credit_notes.md) · [the analysis in my CV](#the-analysis-in-my-cv)
 
-## Use it on your own store
+[![The page: the most credited item by value is a typing error, the item most customers sent back is the bestseller](assets/page.png)](https://errer441122.github.io/ecommerce-cx-analytics/)
 
-The analysis below found that late delivery is the main reason for a bad
-review. Two tools turn that into a daily routine on a store's own exports.
+## The problem
 
-**[Open the tools in your browser](https://errer441122.github.io/ecommerce-cx-analytics/)**:
-load your shipments or reviews export, see the result, download the lists.
-The page runs this repository's Python in the browser, so nothing leaves your
-computer and nothing needs installing. Its "try" buttons use handwritten
-example files and the 38,813 real Olist reviews, only to show what the output
-looks like.
+The unhappy B2B customer asks for a credit note. It stays in the ERP, while the people who prepare the newsletter, the catalogue or the sales reps' list of bestsellers work somewhere else. So the item that customers are sending back gets pushed again.
 
-[![The tools page: the finding on the real Olist reviews, and the late-orders tool on the example file](assets/tools_page.png)](https://errer441122.github.io/ecommerce-cx-analytics/)
+Opening the ERP list is not enough. In two years of a real wholesaler, the most credited item by value is a typing error: 80,995 pieces, £168,470, cancelled the same day. The item that most customers really sent back is the **bestseller**: 170 of 1,314.
 
-The page opens on the finding of the analysis below: 82.7% of the orders
-delivered on time got 4 or 5 stars, against 26.7% of the late ones. Under it,
-the two tools: in the picture, the late-orders tool on the example file, with
-the orders to contact first, the late deliveries to follow up and the late
-rate by carrier. The review triage shows its queue as tickets, most urgent
-first, each with the team it goes to.
+## How it works
 
-The same tools run from the command line:
+One export with invoices and credit notes (customer, date, item, quantity), and the items you want to promote:
 
-| Tool | Command | What you get |
+```bash
+python src/credit_notes.py --lines lines.csv --campaign catalogue.csv
+```
+
+| File | What it is for |
+| --- | --- |
+| `campaign.csv` | Every item of the campaign: leave out, ok, or too few sales to say |
+| `items_on_hold.csv` | The whole hold list, with the most frequent reason if the export has one: for quality, packaging, product pages |
+| `customers.csv` | Who sent those items back, and who bought them in the last 30 days and has not complained yet, with the sales rep |
+
+Three rules, no AI:
+
+1. **A credit line is goods sent back only if the same customer bought the same item on an earlier day.** Same day is a typing correction. No earlier purchase is not counted.
+2. **Customers are counted, not pieces.** One customer who returns 1,000 pieces is one problem.
+3. **An item is on hold** when at least 3 customers sent it back in the last 60 days, at least 20 bought it, and the share is at least 3 times the one of all the other items. The thresholds are options.
+
+It reads what ERPs write: semicolons, decimal commas, `31/12/2026`, SAP's trailing minus, Italian or English headers, and credit notes as negative quantities or as a document type (`TD04` in Italian e-invoicing). The same code runs [in the browser](https://errer441122.github.io/ecommerce-cx-analytics/#check), where the file never leaves the computer.
+
+## The proof: nine checks on two years
+
+Each check uses only what was known that day. Then only the purchases made *after* it count: how many customers sent the item back within 60 days.
+
+| | Customers who bought after the check | Sent it back |
+| --- | ---: | ---: |
+| Items on hold | 20,516 | **6.9%** |
+| All the other items | 444,858 | **1.5%** |
+| Bestsellers on hold (19 of 180, about two in every list of 20) | 3,042 | **8.4%** |
+| The other bestsellers | 18,487 | **1.5%** |
+
+- **£406,764 of the £713,010 credited** was cancelled on the day it was invoiced. A list by value shows those first.
+- **A customer who sends goods back is not leaving.** In 10 of 10 groups of similar customers, they ordered again at least as often. So the tool points at items, not at customers to save.
+
+Every number is rebuilt by [`src/backtest.py`](src/backtest.py) in CI: [full tables](reports/credit_notes.md).
+
+## What other software already does
+
+| Tool | What it does | What stays open in B2B |
 | --- | --- | --- |
-| Late orders | `python src/late_orders.py --shipments shipments.csv` | `late_open.csv`: orders past the promised date and not delivered yet, longest wait first, to contact before the customer complains and to import into Klaviyo (`delivery_issue=open`) so promotions skip them. `late_delivered.csv`: orders that arrived late this week, for a follow-up. The late rate by carrier, to spot the one that is failing |
-| Review triage | `python src/review_triage.py --reviews reviews.csv --lang it` | `triage.csv`: 1-2 star reviews, most urgent first (not received, then product problems, then delivery and service), each with the team it goes to. `themes.csv`: how often each theme comes up and its average rating |
+| Email platform | Picks products: a Klaviyo [product feed](https://help.klaviyo.com/hc/en-us/articles/115005082787) filters by category, price, stock level and engagement | Returns are not among the filters |
+| Reviews and surveys | Stars, comments, NPS | They reach whoever answers, often not the person who opened the box |
+| Helpdesk | Sorts the complaints that become tickets | A credit note agreed by phone with the rep never becomes one |
+| ERP | Lists credit notes by item, pieces or value | Typing errors on top, pieces instead of customers, and not where campaigns are prepared |
 
-The shipments file comes from the shipping platform or the carrier and needs
-an order number, the promised delivery date and the delivery date (empty while
-in transit); dates can be `YYYY-MM-DD` or `DD/MM/YYYY`, and files saved again
-by Excel (semicolons, byte-order mark, older Windows encoding in the browser)
-are read as they are. The reviews file can be
-any export with a rating and the text. Column names differ by platform, so
-both tools take them as flags (`--promised`, `--delivered`, `--rating`,
-`--text`, ...). The themes are a keyword list in Italian, English and
-Portuguese that the team can read and extend, not a language model: every tag
-can be checked by reading the review.
+## What is real and what is not
 
-**How I know it is right:** on the 38,813 real Olist comments the triage
-reproduces the theme counts and average ratings of the analysis below exactly.
-On those reviews it puts 9,191 at 1-2 stars in the queue, and 2,080 of them
-say the order never arrived. The late-orders tool is tested on a handwritten
-file ([`data/shipments_example.csv`](data/shipments_example.csv)), because the
-public dataset does not include orders still in transit.
-
-Nothing leaves the machine. The output folder `cx_actions/` is gitignored
-because the lists hold customer emails.
-
-## What the data says
-
-- **79% of customers are satisfied** (4 or 5 stars out of 5).
-- **Late delivery is the main problem.** When the order arrives on time, 83% of
-  customers are satisfied. When it arrives after the promised date, only 27%
-  are. Late orders are just 6.7% of the total, but they account for 23% of all
-  unsatisfied reviews.
-- **Speed helps too.** Orders delivered within 7 days: 86% satisfied. Orders
-  that take 15 days or more: 65%.
-- **Some regions are much worse than others.** In the state of Maranhão 17% of
-  orders arrive late and satisfaction drops to 70%. Rio de Janeiro matters most
-  in volume: 12,000 reviews, 12% late, 73.5% satisfied.
-- **The worst reviews are about orders that never arrived or arrived
-  incomplete.** Comments on this topic have an average score of 1.6 out of 5.
-
-Reports: [satisfaction brief](reports/customer_satisfaction_brief.md) ·
-[full analysis](reports/cx_driver_analysis.md).
-
-## The metrics I used
-
-| Metric | In plain words |
+| Real | Not yet |
 | --- | --- |
-| **Satisfaction rate (CSAT)** | Share of reviews with 4 or 5 stars |
-| **Late-delivery rate** | Share of orders delivered after the date promised at checkout |
-| **Delivery time** | Days between the purchase and the delivery |
-| **Promoters and detractors** | An NPS-style score built from the stars: 5 = promoter, 4 = neutral, 3 or less = detractor. Olist has no real NPS question, so this is an approximation |
-| **Review topics** | Reviews grouped by keyword: delivery, product quality, not received, customer service |
+| 805,828 invoice and cancellation lines of a UK company, many of whose customers are wholesalers (UCI, 2009 to 2011) | A company's own catalogue. Leaving the items out of a real campaign is the next step |
+| The nine checks, made with what was known on each day | Why the goods came back: the public data has no reason column |
 
-Each metric is split by state and by product category, so the team can see
-where the problem is concentrated.
+A cancellation dated after the purchase is read as goods sent back. That reading is mine; the dataset does not say why an invoice was cancelled.
 
-The full analysis also contains some more advanced statistical checks that the
-AI assistant added to confirm the numbers above. They are not the point of the
-project: the comparisons in this README are the ones I use to explain it.
+## The analysis in my CV
 
-## Real-World Business Application (Next Steps)
-
-What a CX or CRM team could do with these findings. These are recommendations:
-the dataset shows what happened, it does not prove what caused it, and nothing
-here has been tested.
-
-1. **Fix the promise before the product.** Customers are judging the delivery
-   date they were promised. In the regions with the most late orders, showing a
-   more realistic delivery date at checkout is cheaper than making the
-   logistics faster, and it attacks the same problem.
-2. **Write to the customer before they write the review.** A late order is
-   known before the customer complains. An automatic email or SMS when the
-   order passes its promised date ("we are sorry, here is the new date") costs
-   very little and reaches the customer at the moment the bad review is formed.
-3. **Ask for reviews at the right time.** Send the review request after the
-   delivery is confirmed, not a fixed number of days after the purchase.
-4. **Give "order not received" its own fast lane in customer service.** It is
-   a small group with the lowest scores, so a quick refund or reshipment there
-   protects the rating more than any other single action.
-5. **Report late-delivery rate next to satisfaction.** Looking at the two
-   numbers together, region by region, shows whether a drop in reviews
-   is a product problem or a delivery problem.
-
-## What is in here
-
-| Path | What it does |
+| What my CV says | Where it is |
 | --- | --- |
-| `reports/` | The satisfaction brief and the full analysis |
-| `data/` | The prepared review data and where it comes from |
-| `src/` | The Python scripts that prepare the data, build the reports and run the two tools |
-| `notebooks/` | A second calculation of the main numbers, to catch mistakes |
-| `tests/` | Automatic checks that run on every change |
+| About 95,000 real reviews (Olist): late delivery is the factor most tied to dissatisfaction, 27% of positive reviews against 83% for orders on time | [Full analysis](reports/cx_driver_analysis.md), "Delivery-SLA cohort": 95,639 reviews, 26.7% against 82.7% |
+| Statistical tests, NPS proxy, logistic regression | In the same analysis. Olist has no NPS question: 5 stars count as promoters, 4 as passives, 3 or less as detractors. The finding is the comparison above; the regression checks it with state, category, delivery time and freight held constant |
+| Brief for stakeholders | [Customer satisfaction brief](reports/customer_satisfaction_brief.md), by state and category |
+| Python | [`src/`](src), and the [notebook](notebooks/cross_check.ipynb) that recalculates the main numbers with pandas and statsmodels |
+
+Two tools stood here in November 2026, a list of late orders and a review triage. I removed them: shipping platforms and helpdesks already do both.
 
 ## Run it
 
-The prepared data is already in the repository, so no download is needed:
-
 ```bash
-python src/validate_cx_data.py
-python src/build_cx_summary.py
-python src/cx_driver_analysis.py
+python src/credit_notes.py --lines data/wholesale_demo.csv.gz
 python -m unittest discover -s tests
 ```
 
-## Data and limits
+Only Python is needed. The notebook has its own requirements.
 
-Olist Brazilian E-Commerce dataset (Kaggle, CC BY-NC-SA 4.0), used for a
-non-commercial portfolio. Source and cleaning rules are in
-[`data/REAL_DATA_PROVENANCE.md`](data/REAL_DATA_PROVENANCE.md).
+| Path | Content |
+| --- | --- |
+| `src/credit_notes.py` | The three rules |
+| `src/erp_export.py` | Reading ERP and Excel files |
+| `src/backtest.py` | The nine checks |
+| `src/cx_driver_analysis.py`, `src/build_cx_summary.py` | The analysis in my CV |
+| `data/` | The wholesale lines and the reviews, with [sources and cleaning rules](data/REAL_DATA_PROVENANCE.md) |
+| `docs/` | The page (GitHub Pages) |
+| `tests/` | 29 checks, run on every change |
 
-- This is a public dataset that many people practise on.
-- It covers one Brazilian marketplace between 2016 and 2018. The numbers do
-  not transfer to other shops.
-- Only delivered orders with a review are included.
+## Data
+
+Chen, D. (2019), *Online Retail II*, UCI Machine Learning Repository, CC BY 4.0. Olist Brazilian E-Commerce, Kaggle, CC BY-NC-SA 4.0, used in a non-commercial portfolio.
 
 ## How I built this
 
-I am a Digital Marketing student, not a developer. I built this with AI coding
-assistants: they wrote most of the code. My part was choosing the business
-question and the data, deciding which metrics to compare, checking the results
-against the source data and deciding what to report.
+I am a Digital Marketing student, not a developer. The code was written with AI coding assistants. My part was choosing the question, the rules and the data, checking the results and deciding what to report. MIT licence for the code.
