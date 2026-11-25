@@ -1,10 +1,5 @@
 # Real Data Provenance
 
-Two public datasets: Olist (reviews, used by the analysis in `reports/`) and UCI Online Retail II
-(wholesale lines, used by the credit-note check).
-
-# 1. Olist reviews
-
 ## Source
 
 - **Dataset:** Olist Brazilian E-Commerce Public Dataset
@@ -49,28 +44,3 @@ byte-for-byte from the SHA256-pinned source.
 This CX lab is now **fully real** — there is no synthetic data. The only
 disclosed approximation is the NPS *band* proxy above (a relabelling of the
 real review score, not invented data).
-
-# 2. Wholesale lines
-
-- **Dataset:** Online Retail II, UCI Machine Learning Repository (ID 502). Chen, D. (2019),
-  https://doi.org/10.24432/C5CG6D
-- **License:** Creative Commons Attribution 4.0 International (CC BY 4.0).
-- **What it is:** invoices and cancellations of a UK gift company, December 2009 to December 2011.
-  The dataset page says that many of its customers are wholesalers.
-- **Source archive SHA256:** `572e36277c2390fbfde10664750731e0a86f55e33470d91919085f0408e67bfb`
-
-Cleaning rules (`src/prepare_wholesale.py`):
-
-1. Keep lines with a customer, a five-digit product code and a positive price. Postage, fees,
-   manual lines and samples are left out.
-2. Invoices whose number starts with C are cancellations and keep their negative quantity.
-3. The two yearly sheets overlap on 1-9 December 2010: each invoice is read once.
-4. The description of an item is written once, on its first line, to keep the files small.
-
-A cancellation dated after the purchase is read as goods sent back. That reading is mine: the
-dataset does not say why an invoice was cancelled.
-
-SHA256 of the committed files:
-
-- wholesale_lines.csv.gz: `76432ff006ed9977aa7cbab3e201e6e787ca28888a77ca8f2ae451fa57cb8421` (805,828 lines)
-- wholesale_demo.csv.gz: `65abe97126aae408025458b17df5ce6df6e37421fa434f198c93e398f0f49042` (166,581 lines, the 150 days to 27 October 2010)

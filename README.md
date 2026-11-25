@@ -1,107 +1,97 @@
 # E-commerce CX Analytics
 
-**B2B customers don't write reviews. They send goods back.** This check reads credit notes as customer feedback: which items to leave out of the next campaign, and which customers to ask.
+**Problema.** La newsletter parte alle 11. Chi la prepara non vede che un cliente in lista ha un reclamo aperto, uno aspetta un ordine in ritardo e uno ha ritirato il permesso: sono tre programmi diversi.
 
-**[Open the page](https://errer441122.github.io/ecommerce-cx-analytics/)** · [the proof](reports/credit_notes.md) · [the analysis in my CV](#the-analysis-in-my-cv)
+**Entra.** Quattro file: destinatari, permessi, ticket dell'assistenza, ordini del gestionale.
 
-[![The page: the most credited item by value is a typing error, the item most customers sent back is the bestseller](assets/page.png)](https://errer441122.github.io/ecommerce-cx-analytics/)
+**Succede.** Otto regole: sette fisse, e una in cui l'AI legge i ticket aperti senza categoria. Può fermare qualcuno, non può far passare nessuno.
 
-## The problem
+**Esce.** Tre liste: *Invia*, *Ferma* (motivo, fino a quando, chi decide), *Da decidere* (una domanda precisa per una persona). Non parte nessuna email e non si modifica nessun dato.
 
-The unhappy B2B customer asks for a credit note. It stays in the ERP, while the people who prepare the newsletter, the catalogue or the sales reps' list of bestsellers work somewhere else. So the item that customers are sending back gets pushed again.
+[![La pagina: cambi un dato e vedi chi si sposta da una lista all'altra](assets/pagina.png)](https://errer441122.github.io/ecommerce-cx-analytics/)
 
-Opening the ERP list is not enough. In two years of a real wholesaler, the most credited item by value is a typing error: 80,995 pieces, £168,470, cancelled the same day. The item that most customers really sent back is the **bestseller**: 170 of 1,314.
+**[Provalo: cambia un dato e guarda chi si sposta](https://errer441122.github.io/ecommerce-cx-analytics/)** · [Workflow n8n](workflows/prima-dell-invio.n8n.json) · [Le regole, a parole](docs/regole.md) · [L'analisi del mio CV](#lanalisi-del-mio-cv)
 
-## How it works
+> **Dati inventati**: 48 destinatari, ognuno un caso sporco. La lettura dell'AI e il workflow n8n sono stati eseguiti davvero, il 25 novembre 2026. In un'azienda non è ancora stato usato.
 
-One export with invoices and credit notes (customer, date, item, quantity), and the items you want to promote:
+## Le otto regole
 
-```bash
-python src/credit_notes.py --lines lines.csv --campaign catalogue.csv
-```
-
-| File | What it is for |
+| Regola | Cosa succede |
 | --- | --- |
-| `campaign.csv` | Every item of the campaign: leave out, ok, or too few sales to say |
-| `items_on_hold.csv` | The whole hold list, with the most frequent reason if the export has one: for quality, packaging, product pages |
-| `customers.csv` | Who sent those items back, and who bought them in the last 30 days and has not complained yet, with the sales rep |
+| **R1 File** | Un file manca, è vuoto o non è di oggi o di ieri: non passa nessuno |
+| **R2 Indirizzo** | Non valido, collega o doppione: fermo |
+| **R3 Permesso** | Serve un sì con fonte e data. Un no ferma. Un sì rimesso a mano dopo un no lo decide una persona |
+| **R4 Stessa azienda** | Partita IVA valida o dominio aziendale. Il solo nome non basta mai |
+| **R5 Ordine** | In ritardo: ferma tutta l'azienda fino alla consegna. Consegnato in ritardo: altri 7 giorni |
+| **R6 Ticket** | Reclamo aperto: ferma tutta l'azienda. Chiuso da poco: 7 giorni. Richiesta di catalogo: non ferma |
+| **R7 Testo da leggere** | Ticket aperto senza categoria: lo legge l'AI. Se è un reclamo ferma, altrimenti propone e decide una persona |
+| **R8 Decisione** | Un motivo basta per fermare. Con un dubbio decide una persona. Passa solo chi non ha né motivi né dubbi |
 
-Three rules, no AI:
+Il perché di ogni regola, e le stesse regole su HubSpot, Salesforce o un foglio: [`docs/regole.md`](docs/regole.md).
 
-1. **A credit line is goods sent back only if the same customer bought the same item on an earlier day.** Same day is a typing correction. No earlier purchase is not counted.
-2. **Customers are counted, not pieces.** One customer who returns 1,000 pieces is one problem.
-3. **An item is on hold** when at least 3 customers sent it back in the last 60 days, at least 20 bought it, and the share is at least 3 times the one of all the other items. The thresholds are options.
+## Cosa non fa mai
 
-It reads what ERPs write: semicolons, decimal commas, `31/12/2026`, SAP's trailing minus, Italian or English headers, and credit notes as negative quantities or as a document type (`TD04` in Italian e-invoicing). The same code runs [in the browser](https://errer441122.github.io/ecommerce-cx-analytics/#check), where the file never leaves the computer.
+- Non scrive ai clienti e non modifica CRM, programma di email o gestionale.
+- Non cambia un permesso: se due fonti si contraddicono, lo chiede.
+- Non unisce due aziende per il solo nome.
+- Non fa passare nessuno per merito dell'AI.
 
-## The proof: nine checks on two years
+## Prove
 
-Each check uses only what was known that day. Then only the purchases made *after* it count: how many customers sent the item back within 60 days.
+**Casi sporchi: 48 su 48.** Ogni destinatario dell'esempio è un caso ([`casi/attesi.csv`](casi/attesi.csv)): partita IVA con una cifra in meno, due aziende con lo stesso dominio, sì e no lo stesso giorno, data 31/02, reclamo registrato solo con il nome, un ticket che prova a dare ordini all'AI. Altri 42 controlli provano file mancanti, vecchi, con altri separatori e dieci risposte sbagliate dell'AI. In tutto [90 test](tests/regole.test.mjs), a ogni modifica. Il caso del dominio con due partite IVA ha trovato un errore vero nella prima versione: un contatto passava e non doveva.
 
-| | Customers who bought after the check | Sent it back |
-| --- | ---: | ---: |
-| Items on hold | 20,516 | **6.9%** |
-| All the other items | 444,858 | **1.5%** |
-| Bestsellers on hold (19 of 180, about two in every list of 20) | 3,042 | **8.4%** |
-| The other bestsellers | 18,487 | **1.5%** |
+**n8n 2.48.7, eseguito davvero** ([dettagli](prove/n8n-2026-11-25.md)):
 
-- **£406,764 of the £713,010 credited** was cancelled on the day it was invoiced. A list by value shows those first.
-- **A customer who sends goods back is not leaving.** In 10 of 10 groups of similar customers, they ordered again at least as often. So the tool points at items, not at customers to save.
+| Prova | Invia | Ferma | Da decidere |
+| --- | ---: | ---: | ---: |
+| Tutti i file, AI accesa | 12 | 21 | 15 |
+| AI spenta | 12 | 19 | 17 |
+| Manca il file dei ticket | 0 | 3 | 45 |
+| File di tre giorni prima | 0 | 3 | 45 |
 
-Every number is rebuilt by [`src/backtest.py`](src/backtest.py) in CI: [full tables](reports/credit_notes.md).
+**L'AI, su 30 testi difficili** ([testi e risposte](ai/risultati.json)), letti da un modello piccolo sul mio computer (qwen3.5:4b), quindi il testo non esce dall'azienda:
 
-## What other software already does
+| | |
+| --- | ---: |
+| Reclami fermati subito | 12 su 14 |
+| Reclami non visti, che legge una persona | 2 |
+| Domande proposte giuste | 10 su 10 |
+| Fermati per errore | 0 |
+| Passati senza una persona | 0 |
 
-| Tool | What it does | What stays open in B2B |
-| --- | --- | --- |
-| Email platform | Picks products: a Klaviyo [product feed](https://help.klaviyo.com/hc/en-us/articles/115005082787) filters by category, price, stock level and engagement | Returns are not among the filters |
-| Reviews and surveys | Stars, comments, NPS | They reach whoever answers, often not the person who opened the box |
-| Helpdesk | Sorts the complaints that become tickets | A credit note agreed by phone with the rep never becomes one |
-| ERP | Lists credit notes by item, pieces or value | Typing errors on top, pieces instead of customers, and not where campaigns are prepared |
+Se l'AI potesse far passare qualcuno da sola, 4 testi su 30 sarebbero passati per errore. Per questo può solo fermare. [Perché non uso il suo punteggio di sicurezza](ai/prima-prova.md).
 
-## What is real and what is not
+## Dove si ferma
 
-| Real | Not yet |
+- Fotografa il momento dei file: un reclamo arrivato dopo non lo vede. Va fatto poco prima dell'invio.
+- Un invio alla volta. Se più persone preparano invii insieme serve un CRM condiviso.
+- Le parole di allarme sono caute: "non è un reclamo" ferma lo stesso.
+- Se CRM, assistenza e gestionale sono già collegati, le regole R5 e R6 diventano filtri nel CRM e il workflow serve solo per i casi dubbi.
+- L'email interna con le tre liste non è stata spedita nelle prove: il nodo è stato sostituito per leggere gli allegati.
+
+## Usarlo
+
+1. In n8n: **Workflows → Import from File** → [`prima-dell-invio.n8n.json`](workflows/prima-dell-invio.n8n.json).
+2. Nel nodo **Valori da cambiare**: i tuoi domini, i giorni, l'indirizzo del modello AI (Ollama o un servizio compatibile con OpenAI).
+3. Nel nodo **Email interna**: mittente, destinatario e SMTP. Poi apri il modulo e carica i quattro file.
+
+Senza n8n: la [pagina](https://errer441122.github.io/ecommerce-cx-analytics/#prova) fa lo stesso con i tuoi file, nel browser e senza AI.
+
+## Perché due regole sono così
+
+- **Un ordine in ritardo ferma.** Nell'analisi del mio CV, su 95.639 recensioni vere, è soddisfatto l'82,7% di chi riceve in tempo e il 26,7% di chi riceve in ritardo.
+- **Una nota di credito da sola no.** Su due anni di un vero grossista, chi ha appena reso merce riordina entro 90 giorni nel 79% dei casi, i clienti simili nel 75%: [numeri](prove/nota-di-credito.md).
+
+## L'analisi del mio CV
+
+| Cosa dice il CV | Dove si trova |
 | --- | --- |
-| 805,828 invoice and cancellation lines of a UK company, many of whose customers are wholesalers (UCI, 2009 to 2011) | A company's own catalogue. Leaving the items out of a real campaign is the next step |
-| The nine checks, made with what was known on each day | Why the goods came back: the public data has no reason column |
+| Circa 95.000 recensioni vere (Olist): la consegna in ritardo è il fattore più legato all'insoddisfazione, 27% di recensioni positive contro 83% | [Analisi completa](analisi-cv/reports/cx_driver_analysis.md), "Delivery-SLA cohort": 95.639 recensioni, 26,7% contro 82,7% |
+| Test statistici, proxy NPS, regressione logistica | Nella stessa analisi. Olist non ha una domanda NPS: 5 stelle valgono promotore, 4 neutro, 3 o meno detrattore |
+| Brief per gli stakeholder | [Customer satisfaction brief](analisi-cv/reports/customer_satisfaction_brief.md), per stato e categoria |
 
-A cancellation dated after the purchase is read as goods sent back. That reading is mine; the dataset does not say why an invoice was cancelled.
+## Come è fatto
 
-## The analysis in my CV
+Studente di Digital Marketing, non sviluppatore. Workflow, regole e test sono stati costruiti con assistenti AI. Licenza MIT per il codice; dati Olist CC BY-NC-SA 4.0 (portfolio non commerciale), UCI *Online Retail II* CC BY 4.0.
 
-| What my CV says | Where it is |
-| --- | --- |
-| About 95,000 real reviews (Olist): late delivery is the factor most tied to dissatisfaction, 27% of positive reviews against 83% for orders on time | [Full analysis](reports/cx_driver_analysis.md), "Delivery-SLA cohort": 95,639 reviews, 26.7% against 82.7% |
-| Statistical tests, NPS proxy, logistic regression | In the same analysis. Olist has no NPS question: 5 stars count as promoters, 4 as passives, 3 or less as detractors. The finding is the comparison above; the regression checks it with state, category, delivery time and freight held constant |
-| Brief for stakeholders | [Customer satisfaction brief](reports/customer_satisfaction_brief.md), by state and category |
-| Python | [`src/`](src), and the [notebook](notebooks/cross_check.ipynb) that recalculates the main numbers with pandas and statsmodels |
-
-Two tools stood here in November 2026, a list of late orders and a review triage. I removed them: shipping platforms and helpdesks already do both.
-
-## Run it
-
-```bash
-python src/credit_notes.py --lines data/wholesale_demo.csv.gz
-python -m unittest discover -s tests
-```
-
-Only Python is needed. The notebook has its own requirements.
-
-| Path | Content |
-| --- | --- |
-| `src/credit_notes.py` | The three rules |
-| `src/erp_export.py` | Reading ERP and Excel files |
-| `src/backtest.py` | The nine checks |
-| `src/cx_driver_analysis.py`, `src/build_cx_summary.py` | The analysis in my CV |
-| `data/` | The wholesale lines and the reviews, with [sources and cleaning rules](data/REAL_DATA_PROVENANCE.md) |
-| `docs/` | The page (GitHub Pages) |
-| `tests/` | 29 checks, run on every change |
-
-## Data
-
-Chen, D. (2019), *Online Retail II*, UCI Machine Learning Repository, CC BY 4.0. Olist Brazilian E-Commerce, Kaggle, CC BY-NC-SA 4.0, used in a non-commercial portfolio.
-
-## How I built this
-
-I am a Digital Marketing student, not a developer. The code was written with AI coding assistants. My part was choosing the question, the rules and the data, checking the results and deciding what to report. MIT licence for the code.
+*In English: before a B2B send, eight fixed rules read four exports (recipients, consents, tickets, orders) and split the list into send, hold and ask a person. AI reads only uncategorised tickets and can only hold. Invented data, 48 dirty cases, run for real in n8n.*

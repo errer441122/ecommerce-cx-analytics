@@ -1,0 +1,49 @@
+email;lista;regola;caso
+elena@officinedardi.example;ferma;R6;Un collega della stessa azienda ha un reclamo aperto
+paolo@officinedardi.example;ferma;R6;Come sopra, ma senza partita IVA: lo lega il dominio aziendale
+acquisti@meccanicasole.example;ferma;R5;"Ordine promesso una settimana fa e non consegnato; partita IVA scritta con IT e spazio"
+tecnico@meccanicasole.example;ferma;R5;L'ordine ha solo la partita IVA, il contatto solo il dominio: li collega un altro contatto
+ordini@tessileaurora.example;ferma;R5;Ordine consegnato in ritardo quattro giorni fa
+info@idraulicamonti.example;invia;;Un ordine consegnato in tempo e uno promesso per il futuro
+laura@caseificiovalle.example;ferma;R6;Reclamo chiuso tre giorni fa
+m.re@legnamire.example;invia;;Reclamo chiuso da due settimane
+giulia@plasticanord.example;invia;;Ticket aperto, ma chiede solo il catalogo
+dario@vetrerialago.example;ferma;R6;Categoria innocua, ma nel testo dice che la merce era rotta
+anna@carpenteriariva.example;controlla;R7;Ticket senza categoria, una domanda: l'AI lo propone, decide una persona
+ugo@cartierapini.example;ferma;R7;Reclamo scritto senza nessuna parola di allarme: lo legge l'AI
+rita@molinobassi.example;controlla;R7;Testo vago: 'Come da telefonata.'
+ivo@fonderiacosta.example;controlla;R7;Il testo del ticket prova a dare ordini all'AI
+teo@utensiligatti.example;controlla;R7;L'AI non risponde
+mario.verdi@gmail.com;ferma;R6;Reclamo da un indirizzo personale: ferma solo lui
+sara.neri@gmail.com;invia;;Stesso gmail.com del caso precedente: non c'entra
+nord@gruppoalfa.example;ferma;R5;Due aziende con lo stesso dominio: in ritardo è questa
+sud@gruppoalfa.example;invia;;Due aziende con lo stesso dominio: l'altra non c'entra
+holding@gruppoalfa.example;controlla;R4;Stesso dominio, senza partita IVA: non si sa quale delle due sia
+p.conti@conti.example;invia;;Permesso con fonte e data
+l.fabbri@fabbri.example;ferma;R3;Sì a marzo, revocato a settembre
+c.galli@galli.example;invia;;No a marzo, poi un nuovo sì dal modulo web
+d.leone@leone.example;controlla;R3;Disiscritta, poi qualcuno ha rimesso sì a mano nel CRM
+f.moro@moro.example;controlla;R3;Sì senza data
+g.negri@negri.example;ferma;R3;Nessun permesso registrato
+h.olivi@olivi.example;controlla;R3;Sì e no lo stesso giorno da due fonti
+i.pace@pace.example;controlla;R3;Permesso scritto 'forse'
+k.riva@rivaimpianti.example;ferma;R3;Parola inglese del programma di email: unsubscribed
+n.sarti@sarti.example;controlla;R3;Permesso con una data futura
+elena.tosi@tosi.example;invia;;Maiuscole e spazi nell'indirizzo
+elena.tosi@tosi.example;ferma;R2;Doppione della riga precedente
+mario.rossi@;ferma;R2;Indirizzo non valido
+collega@nostra-azienda.example;ferma;R2;Collega finito in lista
+v.urso@urso.example;ferma;R6;Partita IVA sbagliata: vale il dominio, e lì c'è una garanzia aperta
+z.villa@villa.example;invia;;Ordine senza data promessa: non si può dire in ritardo, finisce nelle note
+w.zago@zago.example;invia;;Ordine in ritardo ma annullato
+o.amato@amato.example;invia;;Merce già resa e accreditata: da sola non ferma nessuno
+q.basso@basso.example;controlla;R5;Data promessa impossibile: 31/02/2026
+y.corsi@corsi.example;controlla;R4;Reclamo registrato solo con il nome dell'azienda
+x.doria@doria.example;ferma;R3 | R5;Due motivi insieme: permesso negato e ordine in ritardo
+j.errani@errani.example;ferma;R6;Ticket 'In lavorazione': vale come aperto
+t.fusco@fusco.example;ferma;R6;Reclamo risolto ma senza data di chiusura: conta da oggi
+r.gallo@gallo.example;controlla;R6;Ticket aperto senza categoria e senza testo
+bianca@lari.example;invia;;Indirizzo copiato con il nome davanti
+a.meli@vendite.meli.example;controlla;R4;Il reclamo arriva da meli.example, il contatto è su vendite.meli.example
+e.nava@nava.example;controlla;R4;Reclamo da un gmail con il nome dell'azienda: potrebbe essere la stessa
+s.orsi@orsi.example;ferma;R7;Reclamo in inglese senza parole di allarme: lo legge l'AI

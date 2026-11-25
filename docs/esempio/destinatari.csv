@@ -1,0 +1,49 @@
+Email;Nome;Azienda;Partita IVA;Responsabile
+elena@officinedardi.example;Elena Dardi;Officine Dardi Srl;12345010008;Bianchi
+paolo@officinedardi.example;Paolo Serra;Officine Dardi Srl;;Bianchi
+acquisti@meccanicasole.example;Ufficio acquisti;Meccanica Sole SpA;IT 12345020007;Conti
+tecnico@meccanicasole.example;Fabio Lodi;Meccanica Sole;;Conti
+ordini@tessileaurora.example;Ivana Tosi;Tessile Aurora Srl;12345030006;Conti
+info@idraulicamonti.example;Segreteria;Idraulica Monti;12345040005;Bianchi
+laura@caseificiovalle.example;Laura Pozzi;Caseificio Valle;12345050004;Bianchi
+m.re@legnamire.example;Marco Re;Legnami Re;12345060003;Conti
+giulia@plasticanord.example;Giulia Ferri;Plastica Nord Srl;12345070002;Conti
+dario@vetrerialago.example;Dario Lago;Vetreria Lago;12345080001;Bianchi
+anna@carpenteriariva.example;Anna Riva;Carpenteria Riva;12345090000;Bianchi
+ugo@cartierapini.example;Ugo Pini;Cartiera Pini;12345100007;Conti
+rita@molinobassi.example;Rita Bassi;Molino Bassi;12345110006;Conti
+ivo@fonderiacosta.example;Ivo Costa;Fonderia Costa;12345120005;Bianchi
+teo@utensiligatti.example;Teo Gatti;Utensili Gatti;12345130004;Bianchi
+mario.verdi@gmail.com;Mario Verdi;;;Conti
+sara.neri@gmail.com;Sara Neri;;;Conti
+nord@gruppoalfa.example;Lia Nordi;Alfa Nord Srl;12345140003;Bianchi
+sud@gruppoalfa.example;Edo Sudi;Alfa Sud Srl;12345150002;Bianchi
+holding@gruppoalfa.example;Direzione;Gruppo Alfa;;Bianchi
+p.conti@conti.example;Piero Conti;Conti Srl;;Conti
+l.fabbri@fabbri.example;Lia Fabbri;Fabbri Srl;;Conti
+c.galli@galli.example;Cesare Galli;Galli Srl;;Conti
+d.leone@leone.example;Dina Leone;Leone Srl;;Bianchi
+f.moro@moro.example;Fulvio Moro;Moro Srl;;Bianchi
+g.negri@negri.example;Gaia Negri;Negri Srl;;Conti
+h.olivi@olivi.example;Hilda Olivi;Olivi Srl;;Conti
+i.pace@pace.example;Ines Pace;Pace Srl;;Bianchi
+k.riva@rivaimpianti.example;Katia Riva;Riva Impianti;;Bianchi
+n.sarti@sarti.example;Nico Sarti;Sarti Srl;;Conti
+  ELENA.TOSI@TOSI.EXAMPLE ;Elena Tosi;Tosi Srl;;Conti
+elena.tosi@tosi.example;E. Tosi;Tosi;;Conti
+mario.rossi@;Mario Rossi;Rossi;;Bianchi
+collega@nostra-azienda.example;Un collega;Nostra Azienda;;Bianchi
+v.urso@urso.example;Vito Urso;Urso Srl;1234567890;Bianchi
+z.villa@villa.example;Zoe Villa;Villa Srl;12345160001;Conti
+w.zago@zago.example;Walter Zago;Zago Srl;12345170000;Conti
+o.amato@amato.example;Olga Amato;Amato Srl;12345180009;Bianchi
+q.basso@basso.example;Quinto Basso;Basso Srl;12345190008;Bianchi
+y.corsi@corsi.example;Yuri Corsi;Corsi Srl;;Conti
+x.doria@doria.example;Xenia Doria;Doria Srl;12345200005;Conti
+j.errani@errani.example;Jole Errani;Errani Srl;;Bianchi
+t.fusco@fusco.example;Tino Fusco;Fusco Srl;;Bianchi
+r.gallo@gallo.example;Rina Gallo;Gallo Srl;;Conti
+Bianca Lari <bianca@lari.example>;Bianca Lari;Lari Srl;;Conti
+a.meli@vendite.meli.example;Aldo Meli;Meli Vendite;;Bianchi
+e.nava@nava.example;Enzo Nava;Nava Srl;;Bianchi
+s.orsi@orsi.example;Silvio Orsi;Orsi Srl;;Conti

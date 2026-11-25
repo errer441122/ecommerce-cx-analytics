@@ -1,0 +1,11 @@
+Ordine;Cliente;Partita IVA;Data promessa;Data consegna;Stato
+5001;Meccanica Sole SpA;12345020007;18/11/2026;;confermato
+5002;Tessile Aurora Srl;12345030006;10/11/2026;21/11/2026;consegnato
+5003;Idraulica Monti;12345040005;20/11/2026;19/11/2026;consegnato
+5004;Alfa Nord Srl;12345140003;2026-11-20;;confermato
+5005;Villa Srl;12345160001;;;confermato
+5006;Zago Srl;12345170000;01/11/2026;;Annullato
+5007;Amato Srl;12345180009;12/11/2026;20/11/2026;Reso
+5008;Basso Srl;12345190008;31/02/2026;;confermato
+5009;Doria Srl;12345200005;15.11.2026;;confermato
+5010;Idraulica Monti;12345040005;30/11/2026;;confermato
