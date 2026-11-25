@@ -1,6 +1,6 @@
-# E-commerce CX Analytics
+# B2B Pre-Send Hold & Triage (Email Suppression Gate)
 
-<sub>Il nome è quello del link stampato sul mio CV; l'analisi citata lì è [più sotto](#lanalisi-del-mio-cv). · Repo name kept so the link on my CV still works.</sub>
+<sub>URL `ecommerce-cx-analytics` mantenuto per il link stampato sul mio CV; l'analisi citata lì è [più sotto](#lanalisi-del-mio-cv). · Repo URL kept so the link on my CV still works.</sub>
 
 > **English summary (full README in Italian below):**
 > - **Problem:** Before a B2B email send, the marketing team cannot see whether a contact's company has an open complaint, a late ERP order or a revoked consent sitting in separate tools.
