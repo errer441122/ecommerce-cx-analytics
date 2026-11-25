@@ -1,5 +1,7 @@
 # E-commerce CX Analytics
 
+<sub>Il nome è quello del link stampato sul mio CV; l'analisi citata lì è [più sotto](#lanalisi-del-mio-cv). · Repo name kept so the link on my CV still works.</sub>
+
 > **English summary (full README in Italian below):**
 > - **Problem:** Before a B2B email send, the marketing team cannot see whether a contact's company has an open complaint, a late ERP order or a revoked consent sitting in separate tools.
 > - **How it works:** An n8n workflow (plus a browser tester) runs 8 rules across four exports (recipients, consents, support tickets, ERP orders) and splits the list into *Send*, *Hold* (whole company by VAT/domain) and *Ask a person* — never sending emails or editing CRM records.
