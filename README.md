@@ -4,8 +4,8 @@
 
 > **English summary (full README in Italian below):**
 > - **Problem:** Before a B2B email send, the marketing team cannot see whether a contact's company has an open complaint, a late ERP order or a revoked consent sitting in separate tools.
-> - **How it works:** An n8n workflow (plus a browser tester) runs 8 rules across four exports (recipients, consents, support tickets, ERP orders) and splits the list into *Send*, *Hold* (whole company by VAT/domain) and *Ask a person* — never sending emails or editing CRM records.
-> - **AI guardrail & verification:** Local AI reads only uncategorised open tickets and **can only hold, never pass**. Tested on 48 dirty edge cases, 90 unit tests, 48,000 randomised sends and live n8n 2.48.7 runs; also includes the public Olist CX analysis referenced in my CV (`analisi-cv/`).
+> - **How it works:** An n8n workflow (plus a browser tester) runs 8 rules across four exports (recipients, consents, support tickets, ERP orders) and splits the list into *Send*, *Hold* (whole company by VAT/domain) and *Ask a person* — never emailing customers or editing CRM records.
+> - **AI guardrail & verification:** Local AI reads only uncategorised open tickets and **can only hold, never pass**. Tested on 48 dirty edge cases, 90 unit tests, 48,000 random recipients in 3,000 sends and real n8n 2.48.7 runs; also includes the public Olist CX analysis referenced in my CV (`analisi-cv/`).
 
 **Problema.** La newsletter parte alle 11. Chi la prepara non vede che un cliente in lista ha un reclamo aperto, uno aspetta un ordine in ritardo e uno ha ritirato il permesso: sono tre programmi diversi.
 
@@ -13,7 +13,7 @@
 
 **Succede.** Otto regole: sette fisse, e una in cui l'AI legge i ticket aperti senza categoria. Può fermare qualcuno, non può far passare nessuno.
 
-**Esce.** Tre liste: *Invia*, *Ferma* (motivo, fino a quando, chi decide), *Da decidere* (una domanda precisa per una persona). Non parte nessuna email e non si modifica nessun dato.
+**Esce.** Tre liste: *Invia*, *Ferma* (motivo, fino a quando, chi decide), *Da decidere* (una domanda precisa per una persona). Ai clienti non parte nessuna email e non si modifica nessun dato.
 
 [![La pagina: cambi un dato e vedi chi si sposta da una lista all'altra](assets/pagina.png)](https://errer441122.github.io/ecommerce-cx-analytics/)
 
