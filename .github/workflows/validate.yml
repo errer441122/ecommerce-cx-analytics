@@ -23,7 +23,9 @@ jobs:
           python-version: "3.11"
 
       - name: "Le regole: 48 casi sporchi e gli altri controlli"
-        run: node --test tests/regole.test.mjs
+        run: |
+          node --test tests/regole.test.mjs
+          node tests/casuali.mjs
 
       - name: "Il workflow n8n contiene le stesse regole"
         run: |

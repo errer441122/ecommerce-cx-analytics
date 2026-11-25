@@ -38,7 +38,7 @@ Il perché di ogni regola, e le stesse regole su HubSpot, Salesforce o un foglio
 
 ## Prove
 
-**Casi sporchi: 48 su 48.** Ogni destinatario dell'esempio è un caso ([`casi/attesi.csv`](casi/attesi.csv)): partita IVA con una cifra in meno, due aziende con lo stesso dominio, sì e no lo stesso giorno, data 31/02, reclamo registrato solo con il nome, un ticket che prova a dare ordini all'AI. Altri 42 controlli provano file mancanti, vecchi, con altri separatori e dieci risposte sbagliate dell'AI. In tutto [90 test](tests/regole.test.mjs), a ogni modifica. Il caso del dominio con due partite IVA ha trovato un errore vero nella prima versione: un contatto passava e non doveva.
+**Casi sporchi: 48 su 48.** Ogni destinatario dell'esempio è un caso ([`casi/attesi.csv`](casi/attesi.csv)): partita IVA con una cifra in meno, due aziende con lo stesso dominio, sì e no lo stesso giorno, data 31/02, reclamo registrato solo con il nome, un ticket che prova a dare ordini all'AI. Altri 42 controlli provano file mancanti, vecchi, con altri separatori e dieci risposte sbagliate dell'AI. In tutto [90 test](tests/regole.test.mjs), a ogni modifica. **48.000 destinatari generati a caso** in 3.000 invii con file sporchi: un [controllo scritto senza guardare le regole](tests/casuali.mjs) non ha trovato nessuno passato con un no, un reclamo aperto o un ordine in ritardo. Il caso del dominio con due partite IVA ha trovato un errore vero nella prima versione: un contatto passava e non doveva.
 
 **n8n 2.48.7, eseguito davvero** ([dettagli](prove/n8n-2026-11-25.md)):
 
