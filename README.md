@@ -2,7 +2,7 @@
 
 <sub>URL `ecommerce-cx-analytics` mantenuto per il link stampato sul mio CV; l'analisi citata lì è [più sotto](#lanalisi-del-mio-cv). · Repo URL kept so the link on my CV still works.</sub>
 
-> **English summary (full README in Italian below):**
+> **English summary (full README in Italian below)** · [Open the live page in English](https://errer441122.github.io/ecommerce-cx-analytics/?lang=en)
 > - **Problem:** Before a B2B email send, the marketing team cannot see whether a contact's company has an open complaint, a late ERP order or a revoked consent sitting in separate tools.
 > - **How it works:** An n8n workflow (plus a browser tester) runs 8 rules across four exports (recipients, consents, support tickets, ERP orders) and splits the list into *Send*, *Hold* (whole company by VAT/domain) and *Ask a person* — never emailing customers or editing CRM records.
 > - **AI guardrail & verification:** Local AI reads only uncategorised open tickets and **can only hold, never pass**. Tested on 48 dirty edge cases, 90 unit tests, 48,000 random recipients in 3,000 sends and real n8n 2.48.7 runs; also includes the public Olist CX analysis referenced in my CV (`analisi-cv/`).

@@ -58,39 +58,46 @@ ul.plain { margin: 0; padding: 0; list-style: none; } ul.plain li { padding: 9px
 form { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin: 14px 0; } label { display: grid; gap: 5px; font-weight: 600; font-size: 14.5px; }
 input { font: 400 14.5px var(--sans); max-width: 100%; } input[type=date] { padding: 7px 9px; border: 1px solid var(--line); }
 details summary { cursor: pointer; font-weight: 600; color: var(--accent); width: fit-content; }
+.top nav { display: flex; gap: 22px; }
+.lang-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 2px; flex-shrink: 0; }
+.lang-switch button { font: 600 13px/1 var(--sans); padding: 7px 10px; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.lang-switch button:hover { color: var(--ink); }
+.lang-switch button[aria-pressed=true] { background: var(--accent); color: #fff; }
 footer { border-top: 1px solid var(--line); padding: 24px 0 44px; color: var(--ink-2); font-size: 14.5px; }
 @media (max-width: 820px) { .flow { grid-template-columns: 1fr 1fr; } .flow li:nth-child(3) { border-left: 0; } .flow li:nth-child(n+3) { border-top: 1px solid var(--line); } .cols { grid-template-columns: 1fr; gap: 26px; } }
+@media (max-width: 640px) { .top nav { display: none; } }
 @media (max-width: 520px) { .flow { grid-template-columns: 1fr; } .flow li { border-left: 0; border-top: 1px solid var(--line); } .flow li:first-child { border-top: 0; } h1 { margin-top: 30px; } }
 </style>
 </head>
 <body>
-<header class="top"><div class="wrap"><b>Prima dell'invio</b><a href="#prova">Esempio</a><a href="#regole">Regole</a><a href="#casi">Casi sporchi</a><a href="#ai">AI</a><a href="#limiti">Limiti</a><a href="https://github.com/errer441122/ecommerce-cx-analytics">GitHub</a></div></header>
+<header class="top"><div class="wrap"><b data-i18n="brand">Prima dell'invio</b><nav data-i18n="nav"><a href="#prova">Esempio</a><a href="#regole">Regole</a><a href="#casi">Casi sporchi</a><a href="#ai">AI</a><a href="#limiti">Limiti</a><a href="https://github.com/errer441122/ecommerce-cx-analytics">GitHub</a></nav>
+<div class="lang-switch" role="group" aria-label="Lingua / Language"><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="it" aria-pressed="false">IT</button></div></div></header>
 <main class="wrap">
-<h1>Prima di un invio: chi contattare, chi fermare, chi decide</h1>
-<ol class="flow">
+<h1 data-i18n="h1">Prima di un invio: chi contattare, chi fermare, chi decide</h1>
+<ol class="flow" data-i18n="flow">
 <li><b>Problema</b>La newsletter parte alle 11. Chi la prepara non vede che un cliente in lista ha un reclamo aperto, uno aspetta un ordine in ritardo e uno ha ritirato il permesso: sono tre programmi diversi.</li>
 <li><b>Entra</b>Quattro file: destinatari, permessi, ticket dell'assistenza, ordini del gestionale.</li>
 <li><b>Succede</b>Otto regole: sette fisse, e una in cui l'AI legge i ticket senza categoria. Può fermare, non far passare.</li>
 <li><b>Esce</b>Tre liste: invia, ferma (motivo, fino a quando, chi decide), da decidere. Non parte nessuna email.</li>
 </ol>
-<p class="sim"><b>Dati inventati</b> per mettere alla prova le regole: 48 destinatari con gli errori tipici degli export. La lettura dell'AI è stata fatta con un modello reale. In un'azienda non è ancora stato usato.</p>
+<p class="sim" data-i18n="sim"><b>Dati inventati</b> per mettere alla prova le regole: 48 destinatari con gli errori tipici degli export. La lettura dell'AI è stata fatta con un modello reale. In un'azienda non è ancora stato usato.</p>
 
 <section id="prova">
-<h2>Cambia un dato e guarda chi si sposta</h2>
-<p class="sub">Le liste si ricalcolano qui con le stesse regole del workflow n8n. Nell'esempio è il 25 novembre 2026.</p>
+<h2 data-i18n="prova_h">Cambia un dato e guarda chi si sposta</h2>
+<p class="sub" data-i18n="prova_sub">Le liste si ricalcolano qui con le stesse regole del workflow n8n. Nell'esempio è il 25 novembre 2026.</p>
 <div class="row" id="scene"></div>
 <p class="moved" id="moved" aria-live="polite"></p>
 <div class="lists" id="lists"></div>
-<details style="margin-top:22px"><summary>Usa i tuoi file</summary>
-<p class="sub">CSV con intestazioni in italiano o inglese. Restano in questo browser. Qui l'AI non c'è: i testi da leggere vanno tutti a una persona.</p>
-<form id="f"><label>Destinatari <input type="file" name="destinatari" accept=".csv,.txt"></label><label>Permessi <input type="file" name="permessi" accept=".csv,.txt"></label><label>Ticket <input type="file" name="ticket" accept=".csv,.txt"></label><label>Ordini <input type="file" name="ordini" accept=".csv,.txt"></label><label>File scaricati il <input type="date" name="del"></label></form>
-<div class="row"><button class="btn" type="button" id="go">Controlla</button><button class="btn" type="button" id="dl">Scarica le tre liste</button></div></details>
+<details style="margin-top:22px"><summary data-i18n="tuoi_h">Usa i tuoi file</summary>
+<p class="sub" data-i18n="tuoi_sub">CSV con intestazioni in italiano o inglese. Restano in questo browser. Qui l'AI non c'è: i testi da leggere vanno tutti a una persona.</p>
+<form id="f"><label><span data-i18n="f_dest">Destinatari</span> <input type="file" name="destinatari" accept=".csv,.txt"></label><label><span data-i18n="f_perm">Permessi</span> <input type="file" name="permessi" accept=".csv,.txt"></label><label><span data-i18n="f_tick">Ticket</span> <input type="file" name="ticket" accept=".csv,.txt"></label><label><span data-i18n="f_ord">Ordini</span> <input type="file" name="ordini" accept=".csv,.txt"></label><label><span data-i18n="f_del">File scaricati il</span> <input type="date" name="del"></label></form>
+<div class="row"><button class="btn" type="button" id="go" data-i18n="go">Controlla</button><button class="btn" type="button" id="dl" data-i18n="dl">Scarica le tre liste</button></div></details>
 </section>
 
 <section id="regole">
-<h2>Le otto regole</h2>
-<p class="sub">Per intero, con il perché, in <a href="https://github.com/errer441122/ecommerce-cx-analytics/blob/main/docs/regole.md">regole.md</a>. Parole e numeri si cambiano senza toccare il resto.</p>
-<div class="scroll tall rules"><table><thead><tr><th>Regola</th><th>Cosa succede</th></tr></thead><tbody>
+<h2 data-i18n="regole_h">Le otto regole</h2>
+<p class="sub" data-i18n="regole_sub">Per intero, con il perché, in <a href="https://github.com/errer441122/ecommerce-cx-analytics/blob/main/docs/regole.md">regole.md</a>. Parole e numeri si cambiano senza toccare il resto.</p>
+<div class="scroll tall rules"><table data-i18n="regole_tab"><thead><tr><th>Regola</th><th>Cosa succede</th></tr></thead><tbody>
 <tr><th scope="row">R1 File</th><td>Un file manca, è vuoto o non è di oggi o di ieri: non passa nessuno.</td></tr>
 <tr><th scope="row">R2 Indirizzo</th><td>Non valido, collega o doppione: fermo.</td></tr>
 <tr><th scope="row">R3 Permesso</th><td>Serve un sì con fonte e data. Un no ferma. Un sì rimesso a mano dopo un no lo decide una persona.</td></tr>
@@ -103,33 +110,33 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 44px; color: var(--i
 </section>
 
 <section id="casi">
-<h2>Casi sporchi: <span id="ok">48 su 48</span></h2>
-<p class="sub">Ogni riga dell'esempio è un caso. Il risultato è calcolato adesso, in questa pagina. Il caso del dominio con due partite IVA ha trovato un errore vero nella prima versione: un contatto passava e non doveva.</p>
-<div class="scroll tall"><table><thead><tr><th>Caso</th><th>Atteso</th><th>Ottenuto</th><th>Regola</th></tr></thead><tbody id="cases"></tbody></table></div>
+<h2><span data-i18n="casi_h">Casi sporchi:</span> <span id="ok">48 su 48</span></h2>
+<p class="sub" data-i18n="casi_sub">Ogni riga dell'esempio è un caso. Il risultato è calcolato adesso, in questa pagina. Il caso del dominio con due partite IVA ha trovato un errore vero nella prima versione: un contatto passava e non doveva.</p>
+<div class="scroll tall"><table><thead data-i18n="casi_th"><tr><th>Caso</th><th>Atteso</th><th>Ottenuto</th><th>Regola</th></tr></thead><tbody id="cases"></tbody></table></div>
 </section>
 
 <section id="ai">
-<h2>Dove entra l'AI, e quanto sbaglia</h2>
-<p class="sub">30 testi scritti per metterla in difficoltà: ironia, altre lingue, minacce gentili, ordini nascosti nel testo. Letti il 25 novembre 2026 da un modello piccolo sul mio computer (qwen3.5:4b), quindi il testo non esce dall'azienda.</p>
+<h2 data-i18n="ai_h">Dove entra l'AI, e quanto sbaglia</h2>
+<p class="sub" data-i18n="ai_sub">30 testi scritti per metterla in difficoltà: ironia, altre lingue, minacce gentili, ordini nascosti nel testo. Letti il 25 novembre 2026 da un modello piccolo sul mio computer (qwen3.5:4b), quindi il testo non esce dall'azienda.</p>
 <div class="nums" id="nums"></div>
 <p class="sub" id="why"></p>
-<div class="scroll"><table><thead><tr><th>Testo</th><th>Era</th><th>L'AI ha letto</th><th>Cosa succede</th></tr></thead><tbody id="texts"></tbody></table></div>
+<div class="scroll"><table><thead data-i18n="ai_th"><tr><th>Testo</th><th>Era</th><th>L'AI ha letto</th><th>Cosa succede</th></tr></thead><tbody id="texts"></tbody></table></div>
 </section>
 
 <section id="limiti" class="cols">
-<div><h2>Non fa mai</h2><ul class="plain">
+<div data-i18n="mai"><h2>Non fa mai</h2><ul class="plain">
 <li>Non scrive ai clienti e non modifica CRM, email o gestionale: legge quattro file, ne restituisce tre.</li>
 <li>Non cambia un permesso: se due fonti si contraddicono, lo chiede.</li>
 <li>Non unisce due aziende per il solo nome.</li>
 <li>Non fa passare nessuno per merito dell'AI.</li></ul></div>
-<div><h2>Dove si ferma</h2><ul class="plain">
+<div data-i18n="limiti"><h2>Dove si ferma</h2><ul class="plain">
 <li>Fotografa il momento dei file: un reclamo arrivato dopo non lo vede. Va fatto poco prima dell'invio.</li>
 <li>Un solo invio alla volta. Se più persone preparano invii insieme serve un CRM condiviso.</li>
 <li>Le parole di allarme sono caute: "non è un reclamo" ferma lo stesso.</li>
 <li>Provato in n8n e nel browser con dati inventati. Il prossimo passo è un invio vero, confrontando le liste con le decisioni di chi lo prepara.</li></ul></div>
 </section>
 
-<section>
+<section data-i18n="perche">
 <h2>Perché due regole sono così</h2>
 <div class="cols">
 <div><h3>Un ordine in ritardo ferma</h3><p class="sub">Nell'analisi del mio CV, su 95.639 recensioni vere, è soddisfatto l'82,7% di chi riceve in tempo e il 26,7% di chi riceve in ritardo. <a href="https://github.com/errer441122/ecommerce-cx-analytics/blob/main/analisi-cv/reports/cx_driver_analysis.md">L'analisi</a></p></div>
@@ -137,13 +144,71 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 44px; color: var(--i
 </div>
 </section>
 </main>
-<footer><div class="wrap">Riccardo Capanna, studente di Digital Marketing. Costruito con assistenti AI, che hanno scritto il codice. <a href="https://github.com/errer441122">GitHub</a> · <a href="https://www.linkedin.com/in/riccardo-capanna-039a43415/">LinkedIn</a></div></footer>
+<footer><div class="wrap" data-i18n="footer">Riccardo Capanna, studente di Digital Marketing. Costruito con assistenti AI, che hanno scritto il codice. <a href="https://github.com/errer441122">GitHub</a> · <a href="https://www.linkedin.com/in/riccardo-capanna-039a43415/">LinkedIn</a></div></footer>
 
 <script src="regole.js"></script>
 <script>
 "use strict";
 const $ = (id) => document.getElementById(id), OGGI = "2026-11-25";
-const NOMI = { invia: "Invia", ferma: "Ferma", controlla: "Da decidere" };
+
+// Language: ?lang= in the link, then the choice saved on any of my pages, then the browser's language.
+function saveLang(lang) { try { localStorage.setItem("portfolio_lang", lang); } catch {} }
+function startLang() {
+  const asked = new URLSearchParams(location.search).get("lang");
+  if (asked === "en" || asked === "it") { saveLang(asked); return asked; }
+  try { const saved = localStorage.getItem("portfolio_lang"); if (saved === "en" || saved === "it") return saved; } catch {}
+  for (const l of navigator.languages || [navigator.language || ""]) { const x = String(l).slice(0, 2).toLowerCase(); if (x === "en" || x === "it") return x; }
+  return "en";
+}
+let LANG = startLang();
+const ORIG = {};
+document.querySelectorAll("[data-i18n]").forEach((n) => { ORIG[n.dataset.i18n] = n.innerHTML; });
+const RG = "https://github.com/errer441122/ecommerce-cx-analytics/blob/main/";
+const TR = {
+  brand: "Before the send",
+  nav: '<a href="#prova">Example</a><a href="#regole">Rules</a><a href="#casi">Dirty cases</a><a href="#ai">AI</a><a href="#limiti">Limits</a><a href="https://github.com/errer441122/ecommerce-cx-analytics">GitHub</a>',
+  h1: "Before a send: who to contact, who to hold, who decides",
+  flow: "<li><b>Problem</b>The newsletter goes out at 11. Whoever prepares it cannot see that one customer on the list has an open complaint, one is waiting for a late order and one has withdrawn consent: they are three different programs.</li><li><b>In</b>Four files: recipients, consents, support tickets, orders from the ERP.</li><li><b>What happens</b>Eight rules: seven fixed, and one where the AI reads tickets with no category. It can hold, never let through.</li><li><b>Out</b>Three lists: send, hold (reason, until when, who decides), ask a person. No email goes out.</li>",
+  sim: "<b>Invented data</b> to test the rules: 48 recipients with the usual export mistakes. The AI reading was done with a real model. It has not been used in a company yet. Example data and rule outputs are in Italian, like the exports of an Italian company.",
+  prova_h: "Change one fact and watch who moves",
+  prova_sub: "The lists are recalculated here with the same rules as the n8n workflow. In the example it is 25 November 2026.",
+  tuoi_h: "Use your own files",
+  tuoi_sub: "CSV files with Italian or English headers. They stay in this browser. There is no AI here: every text to read goes to a person.",
+  f_dest: "Recipients", f_perm: "Consents", f_tick: "Tickets", f_ord: "Orders", f_del: "Files downloaded on",
+  go: "Check", dl: "Download the three lists",
+  regole_h: "The eight rules",
+  regole_sub: `In full, with the reasons, in <a href="${RG}docs/regole.md">regole.md</a> (Italian). Words and numbers can be changed without touching the rest.`,
+  regole_tab: "<thead><tr><th>Rule</th><th>What happens</th></tr></thead><tbody><tr><th scope=\"row\">R1 Files</th><td>A file is missing, empty, or not from today or yesterday: nobody passes.</td></tr><tr><th scope=\"row\">R2 Address</th><td>Invalid, a colleague or a duplicate: hold.</td></tr><tr><th scope=\"row\">R3 Consent</th><td>It takes a yes with a source and a date. A no holds. A yes typed back by hand after a no is decided by a person.</td></tr><tr><th scope=\"row\">R4 Same company</th><td>Valid VAT number or company domain. The name alone is never enough.</td></tr><tr><th scope=\"row\">R5 Order</th><td>Late: holds the whole company until delivery. Delivered late: 7 more days.</td></tr><tr><th scope=\"row\">R6 Ticket</th><td>Open complaint: holds the whole company. Recently closed: holds for 7 days. Catalogue request: does not hold.</td></tr><tr><th scope=\"row\">R7 Text</th><td>Open ticket with no category: the AI reads it. A complaint holds; anything else is suggested and a person decides.</td></tr><tr><th scope=\"row\">R8 Decision</th><td>One reason is enough to hold. With a doubt a person decides. Only those with no reasons and no doubts pass.</td></tr></tbody>",
+  casi_h: "Dirty cases:",
+  casi_sub: "Every row of the example is a case, described in Italian. The result is calculated now, in this page. The case of a domain with two VAT numbers found a real bug in the first version: a contact got through and should not have.",
+  casi_th: "<tr><th>Case</th><th>Expected</th><th>Got</th><th>Rule</th></tr>",
+  ai_h: "Where the AI comes in, and how often it is wrong",
+  ai_sub: "30 texts written to trip it up: irony, other languages, polite threats, orders hidden in the text. Read on 25 November 2026 by a small model on my computer (qwen3.5:4b), so the text never leaves the company.",
+  ai_th: "<tr><th>Text</th><th>It was</th><th>The AI read</th><th>What happens</th></tr>",
+  mai: "<h2>Never does</h2><ul class=\"plain\"><li>It does not write to customers and does not change the CRM, email or ERP: it reads four files and returns three.</li><li>It does not change a consent: if two sources disagree, it asks.</li><li>It does not merge two companies by name alone.</li><li>It lets nobody through on the AI's word.</li></ul>",
+  limiti: "<h2>Where it stops</h2><ul class=\"plain\"><li>It is a snapshot of the files: a complaint that arrives later is not seen. Run it shortly before the send.</li><li>One send at a time. If several people prepare sends together, a shared CRM is needed.</li><li>The alarm words are cautious: \"not a complaint\" still holds.</li><li>Tested in n8n and in the browser with invented data. The next step is a real send, comparing the lists with the decisions of whoever prepares it.</li></ul>",
+  perche: `<h2>Why two rules are like this</h2><div class="cols"><div><h3>A late order holds</h3><p class="sub">In the analysis on my CV, across 95,639 real reviews, 82.7% of the customers who receive on time are satisfied, against 26.7% of those who receive late. <a href="${RG}analisi-cv/reports/cx_driver_analysis.md">The analysis</a></p></div><div><h3>A credit note alone does not</h3><p class="sub">Over two years of a real wholesaler, customers who have just returned goods reorder within 90 days in 79% of cases; similar customers in 75%. <a href="${RG}prove/nota-di-credito.md">The numbers</a> (Italian)</p></div></div>`,
+  footer: 'Riccardo Capanna, Digital Marketing student. Built with AI assistants, which wrote the code. <a href="https://github.com/errer441122">GitHub</a> · <a href="https://www.linkedin.com/in/riccardo-capanna-039a43415/">LinkedIn</a>',
+};
+const S = {
+  it: { names: { invia: "Invia", ferma: "Ferma", controlla: "Da decidere" }, scene: ["Situazione di partenza", "Conti Srl ritira il permesso", "Meccanica Sole riceve l'ordine", "Un collega di Idraulica Monti apre un reclamo", "L'AI non funziona", "Manca il file dei ticket"],
+    cols: { email: "Email", azienda: "Azienda", responsabile: "Responsabile", domanda: "Domanda", decide: "Decide", regola: "Regola", motivo: "Motivo", fino_a: "Fino a" }, cases: "casi per una persona", contacts: "contatti",
+    notRun: (b) => `Controllo non fatto: ${b}.`, nobodyPasses: " Non passa nessuno.", moved: (n) => (n > 1 ? `${n} contatti si spostano` : `${n} contatto si sposta`), nobodyMoves: "Non si sposta nessuno.",
+    of: (a, b) => `${a} su ${b}`, different: "DIVERSO: ", missing: "assente", nums: ["reclami fermati subito", "reclami non visti: li legge una persona", "domande proposte giuste", "passati senza una persona"],
+    why: (a, b) => `Se l'AI potesse far passare qualcuno da sola, ${a} testi su ${b} sarebbero passati per errore. Per questo può solo fermare. `, whyLink: "Perché non uso il suo punteggio di sicurezza",
+    notes: (n) => `Note sui dati: ${n}.`, done: "Fatto.", loadFail: "I file dell'esempio non si sono caricati: ricarica la pagina.", codes: {}, title: ORIG_TITLE() },
+  en: { names: { invia: "Send", ferma: "Hold", controlla: "Ask a person" }, scene: ["Starting point", "Conti Srl withdraws consent", "Meccanica Sole receives its order", "A colleague at Idraulica Monti opens a complaint", "The AI is down", "The tickets file is missing"],
+    cols: { email: "Email", azienda: "Company", responsabile: "Owner", domanda: "Question", decide: "Decides", regola: "Rule", motivo: "Reason", fino_a: "Until" }, cases: "cases for a person", contacts: "contacts",
+    notRun: (b) => `Check not run: ${b}.`, nobodyPasses: " Nobody passes.", moved: (n) => (n > 1 ? `${n} contacts move` : `${n} contact moves`), nobodyMoves: "Nobody moves.",
+    of: (a, b) => `${a} of ${b}`, different: "DIFFERENT: ", missing: "missing", nums: ["complaints held at once", "complaints missed: a person reads them", "questions suggested correctly", "let through without a person"],
+    why: (a, b) => `If the AI could let someone through on its own, ${a} texts out of ${b} would have got through by mistake. That is why it can only hold. `, whyLink: "Why I do not use its confidence score (Italian)",
+    notes: (n) => `Notes on the data: ${n}.`, done: "Done.", loadFail: "The example files did not load: reload the page.",
+    codes: { reclamo: "complaint", domanda: "question", "non si capisce": "unclear", altro: "other", "richiesta commerciale": "sales enquiry", ferma: "hold", "decide una persona": "a person decides" }, title: "Before the send: who can be contacted" },
+};
+function ORIG_TITLE() { return document.title; }
+const t = (k) => S[LANG][k];
+const code = (x) => S[LANG].codes[x] || x;
+const NOMI = new Proxy({}, { get: (_, k) => S[LANG].names[k] });
 const RAW = location.hostname.endsWith("github.io") ? "https://raw.githubusercontent.com/errer441122/ecommerce-cx-analytics/main/" : "../";
 const el = (t, p = {}, ...k) => { const n = Object.assign(document.createElement(t), p); n.append(...k.map((x) => (x instanceof Node ? x : String(x ?? "")))); return n; };
 const SCENE = [
@@ -154,19 +219,20 @@ const SCENE = [
   ["L'AI non funziona", (t) => t, "senza"],
   ["Manca il file dei ticket", (t) => ({ ...t, ticket: "" })],
 ];
-let testi, ai, base, ultime;
+let testi, ai, base, ultime, scelta = 0, ultimoMsg = null, CASI, RIS;
 const dove = (l) => new Map(Object.entries(l).flatMap(([k, r]) => r.map((x, i) => [x.email + "|" + (x.motivo || "").includes("doppione"), k])));
 function disegna(liste, spostati = new Set()) {
   ultime = liste;
-  const col = { invia: [["email", "Email"], ["azienda", "Azienda"], ["responsabile", "Responsabile"]], controlla: [["email", "Email"], ["azienda", "Azienda"], ["domanda", "Domanda"], ["decide", "Decide"], ["regola", "Regola"]], ferma: [["email", "Email"], ["azienda", "Azienda"], ["motivo", "Motivo"], ["fino_a", "Fino a"], ["decide", "Decide"], ["regola", "Regola"]] };
-  $("lists").replaceChildren(...["controlla", "ferma", "invia"].map((k) => el("div", {}, el("h3", {}, el("span", { className: "tag " + k }, NOMI[k]), " ", el("span", { className: "n" }, `${liste[k].length} ${k === "controlla" ? "casi per una persona" : "contatti"}`)),
-    el("div", { className: "scroll" }, el("table", {}, el("thead", {}, el("tr", {}, ...col[k].map((c) => el("th", {}, c[1])))),
-      el("tbody", {}, ...[...liste[k]].sort((a, b) => spostati.has(b.email) - spostati.has(a.email)).map((r) => el("tr", { className: spostati.has(r.email) ? "new" : "" }, ...col[k].map((c) => el("td", { className: c[0] === "email" ? "e" : "" }, r[c[0]]))))))))));
+  const n = t("cols"), col = { invia: ["email", "azienda", "responsabile"], controlla: ["email", "azienda", "domanda", "decide", "regola"], ferma: ["email", "azienda", "motivo", "fino_a", "decide", "regola"] };
+  $("lists").replaceChildren(...["controlla", "ferma", "invia"].map((k) => el("div", {}, el("h3", {}, el("span", { className: "tag " + k }, NOMI[k]), " ", el("span", { className: "n" }, `${liste[k].length} ${k === "controlla" ? t("cases") : t("contacts")}`)),
+    el("div", { className: "scroll" }, el("table", {}, el("thead", {}, el("tr", {}, ...col[k].map((c) => el("th", {}, n[c])))),
+      el("tbody", {}, ...[...liste[k]].sort((a, b) => spostati.has(b.email) - spostati.has(a.email)).map((r) => el("tr", { className: spostati.has(r.email) ? "new" : "" }, ...col[k].map((c) => el("td", { className: c === "email" ? "e" : "" }, r[c]))))))))));
 }
 function scena(i) {
+  scelta = i; ultimoMsg = null;
   const [, f, senza] = SCENE[i], p = regoleFisse(f(testi), OGGI, OGGI), l = treListe(p, senza ? null : ai), prima = dove(base), poi = dove(l), mossi = [...poi].filter(([k, v]) => prima.get(k) !== v);
   [...$("scene").children].forEach((b, n) => b.setAttribute("aria-pressed", n === i));
-  $("moved").textContent = !i ? "" : p.blocchi.length ? `Controllo non fatto: ${p.blocchi.join("; ")}. Non passa nessuno.` : mossi.length ? `${mossi.length} ${mossi.length > 1 ? "contatti si spostano" : "contatto si sposta"}: ${mossi.slice(0, 4).map(([k, v]) => `${k.split("|")[0]} → ${NOMI[v]}`).join(", ")}${mossi.length > 4 ? "..." : ""}` : "Non si sposta nessuno.";
+  $("moved").textContent = !i ? "" : p.blocchi.length ? t("notRun")(p.blocchi.join("; ")) + t("nobodyPasses") : mossi.length ? `${t("moved")(mossi.length)}: ${mossi.slice(0, 4).map(([k, v]) => `${k.split("|")[0]} → ${NOMI[v]}`).join(", ")}${mossi.length > 4 ? "..." : ""}` : t("nobodyMoves");
   disegna(l, new Set(p.blocchi.length ? [] : mossi.map(([k]) => k.split("|")[0])));
 }
 async function testo(u) { const r = await fetch(u); if (!r.ok) throw new Error(u); return r.text(); }
@@ -174,20 +240,44 @@ async function testo(u) { const r = await fetch(u); if (!r.ok) throw new Error(u
   testi = Object.fromEntries(await Promise.all(["destinatari", "permessi", "ticket", "ordini"].map(async (n) => [n, await testo(`esempio/${n}.csv`)])));
   ai = JSON.parse(await testo("esempio/risposte-ai.json"));
   base = treListe(regoleFisse(testi, OGGI, OGGI), ai);
-  $("scene").replaceChildren(...SCENE.map(([n], i) => { const b = el("button", { className: "btn", type: "button" }, n); b.addEventListener("click", () => scena(i)); return b; }));
-  scena(0);
-  const casi = righeCsv(await testo(RAW + "casi/attesi.csv")).slice(1); let buoni = 0;
-  $("cases").replaceChildren(...casi.map(([e, lista, regola, caso]) => {
-    const t = Object.entries(base).flatMap(([k, r]) => r.filter((x) => x.email === e).map((x) => [k, x.regola || ""])), g = t.find((x) => x[0] === lista && x[1] === regola); buoni += !!g;
-    const o = g || t[0] || ["", ""];
-    return el("tr", {}, el("td", {}, caso), el("td", {}, el("span", { className: "tag " + lista }, NOMI[lista])), el("td", {}, el("span", { className: "tag " + o[0] }, (g ? "" : "DIVERSO: ") + (NOMI[o[0]] || "assente"))), el("td", {}, o[1]));
+  CASI = righeCsv(await testo(RAW + "casi/attesi.csv")).slice(1);
+  RIS = JSON.parse(await testo(RAW + "ai/risultati.json"));
+  disegnaTutto();
+})().catch((e) => { $("moved").textContent = t("loadFail"); });
+
+// Everything built from data, in the current language.
+function disegnaTutto() {
+  $("scene").replaceChildren(...SCENE.map(([], i) => { const b = el("button", { className: "btn", type: "button" }, t("scene")[i]); b.addEventListener("click", () => scena(i)); return b; }));
+  if (ultimoMsg) { [...$("scene").children].forEach((b) => b.setAttribute("aria-pressed", false)); $("moved").textContent = ultimoMsg(); disegna(ultime); } else scena(scelta);
+  let buoni = 0;
+  $("cases").replaceChildren(...CASI.map(([e, lista, regola, caso]) => {
+    const r = Object.entries(base).flatMap(([k, x]) => x.filter((y) => y.email === e).map((y) => [k, y.regola || ""])), g = r.find((x) => x[0] === lista && x[1] === regola); buoni += !!g;
+    const o = g || r[0] || ["", ""];
+    return el("tr", {}, el("td", {}, caso), el("td", {}, el("span", { className: "tag " + lista }, NOMI[lista])), el("td", {}, el("span", { className: "tag " + o[0] }, (g ? "" : t("different")) + (NOMI[o[0]] || t("missing")))), el("td", {}, o[1]));
   }));
-  $("ok").textContent = `${buoni} su ${casi.length}`;
-  const { riepilogo: s, risultati } = JSON.parse(await testo(RAW + "ai/risultati.json"));
-  $("nums").replaceChildren(...[[`${s.reclami_fermati_subito} su ${s.reclami}`, "reclami fermati subito"], [`${s.reclami - s.reclami_fermati_subito}`, "reclami non visti: li legge una persona"], [`${s.domande_proposte_giuste} su ${s.domande}`, "domande proposte giuste"], ["0", "passati senza una persona"]].map(([b, t]) => el("div", {}, el("b", {}, b), el("span", {}, t))));
-  $("why").replaceChildren(`Se l'AI potesse far passare qualcuno da sola, ${s.sarebbero_passati_se_l_ai_potesse_decidere} testi su ${s.testi} sarebbero passati per errore. Per questo può solo fermare. `, el("a", { href: "https://github.com/errer441122/ecommerce-cx-analytics/blob/main/ai/prima-prova.md" }, "Perché non uso il suo punteggio di sicurezza"), ".");
-  $("texts").replaceChildren(...[...risultati].sort((a, b) => (b.atteso !== "domanda" && /domanda|commerciale/.test(b.letto)) - (a.atteso !== "domanda" && /domanda|commerciale/.test(a.letto))).map((r) => el("tr", {}, el("td", {}, r.testo), el("td", { className: "e" }, r.atteso), el("td", { className: "e" }, r.letto.replace("_", " ")), el("td", {}, el("span", { className: "tag " + (r.esito === "ferma" ? "ferma" : "controlla") }, r.esito)))));
-})().catch((e) => { $("moved").textContent = "I file dell'esempio non si sono caricati: ricarica la pagina."; });
+  $("ok").textContent = t("of")(buoni, CASI.length);
+  const { riepilogo: s, risultati } = RIS, n = t("nums");
+  $("nums").replaceChildren(...[[t("of")(s.reclami_fermati_subito, s.reclami), n[0]], [`${s.reclami - s.reclami_fermati_subito}`, n[1]], [t("of")(s.domande_proposte_giuste, s.domande), n[2]], ["0", n[3]]].map(([b, x]) => el("div", {}, el("b", {}, b), el("span", {}, x))));
+  $("why").replaceChildren(t("why")(s.sarebbero_passati_se_l_ai_potesse_decidere, s.testi), el("a", { href: "https://github.com/errer441122/ecommerce-cx-analytics/blob/main/ai/prima-prova.md" }, t("whyLink")), ".");
+  $("texts").replaceChildren(...[...risultati].sort((a, b) => (b.atteso !== "domanda" && /domanda|commerciale/.test(b.letto)) - (a.atteso !== "domanda" && /domanda|commerciale/.test(a.letto))).map((r) => el("tr", {}, el("td", {}, r.testo), el("td", { className: "e" }, code(r.atteso)), el("td", { className: "e" }, code(r.letto.replace("_", " "))), el("td", {}, el("span", { className: "tag " + (r.esito === "ferma" ? "ferma" : "controlla") }, code(r.esito))))));
+}
+
+function applyLang(lang) {
+  LANG = lang;
+  document.documentElement.lang = LANG;
+  document.title = t("title");
+  document.querySelectorAll(".lang-switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === LANG)));
+  document.querySelectorAll("[data-i18n]").forEach((n) => { n.innerHTML = LANG === "it" ? ORIG[n.dataset.i18n] : TR[n.dataset.i18n]; });
+  if (CASI) disegnaTutto();
+}
+function chooseLang(lang) {
+  saveLang(lang);
+  const u = new URL(location.href);
+  if (u.searchParams.has("lang")) { u.searchParams.set("lang", lang); history.replaceState(null, "", u); }
+  applyLang(lang);
+}
+document.querySelectorAll(".lang-switch button").forEach((b) => b.addEventListener("click", () => chooseLang(b.dataset.lang)));
+applyLang(LANG);
 
 const leggiFile = async (f) => { if (!f) return ""; const b = await f.arrayBuffer(); try { return new TextDecoder("utf-8", { fatal: true }).decode(b); } catch { return new TextDecoder("windows-1252").decode(b); } };
 $("go").addEventListener("click", async () => {
@@ -195,7 +285,8 @@ $("go").addEventListener("click", async () => {
   const ora = new Date(), oggi = `${ora.getFullYear()}-${String(ora.getMonth() + 1).padStart(2, "0")}-${String(ora.getDate()).padStart(2, "0")}`;
   const p = regoleFisse(t, oggi, f.elements.del.value), l = treListe(p, null);
   [...$("scene").children].forEach((b) => b.setAttribute("aria-pressed", false));
-  $("moved").textContent = p.blocchi.length ? `Controllo non fatto: ${p.blocchi.join("; ")}.` : p.note.length ? `Note sui dati: ${p.note.join("; ")}.` : "Fatto.";
+  ultimoMsg = () => (p.blocchi.length ? t("notRun")(p.blocchi.join("; ")) : p.note.length ? t("notes")(p.note.join("; ")) : t("done"));
+  $("moved").textContent = ultimoMsg();
   disegna(l);
 });
 $("dl").addEventListener("click", () => Object.entries(ultime || {}).forEach(([n, r], i) => setTimeout(() => { const a = el("a", { href: URL.createObjectURL(new Blob([inCsv(r, COLONNE_LISTE[n])], { type: "text/csv;charset=utf-8" })), download: n + ".csv" }); document.body.append(a); a.click(); a.remove(); }, 300 * i)));
